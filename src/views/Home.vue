@@ -79,7 +79,7 @@
     </div>
   </section>
   <section
-    class="bg-blue-50 w-full flex flex-col sm:flex-row justify-between px-5 sm:px-8 md:px-11 lg:px-14 py-7 mt-5 gap-3"
+    class="bg-blue-50 w-full flex flex-col sm:flex-row justify-between px-5 sm:px-8 md:px-11 lg:px-14 py-7 mt-14 gap-3"
   >
     <div class="order-1">
       <p class="text-lg text-gray-500 font-light">VISIT AND FOLLOW US</p>
