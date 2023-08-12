@@ -1,52 +1,134 @@
 <template lang="">
-  <div class="custom-shape-divider-bottom-1691573379">
-    <svg
-      data-name="Layer 1"
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 1200 120"
-      preserveAspectRatio="none"
+  <main class="flex flex-row w-full h-screen">
+    <div
+      class="sm:w-1/2 w-full h-full flex flex-col items-center px-5 sm:px-8 md:px-11 lg:px-14 py-20"
     >
-      <path
-        d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z"
-        opacity=".25"
-        class="shape-fill"
-      ></path>
-      <path
-        d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z"
-        opacity=".5"
-        class="shape-fill"
-      ></path>
-      <path
-        d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z"
-        class="shape-fill"
-      ></path>
-    </svg>
-  </div>
+      <div class="self-start w-full flex flex-row items-center justify-between">
+        <img :src="LogoImage" alt="" class="w-36" />
+        <router-link to="/">
+          <img :src="ArrowLeftBackImage" alt="" class="w-8" />
+        </router-link>
+      </div>
+      <div
+        class="m-auto w-full lga:w-1/2 py-8 px-5 flex flex-col justify-center items-center"
+      >
+        <p class="text-md lga:text-2xl font-semibold text-gray-500 mb-5">
+          Signin to Leiger now
+        </p>
+        <div class="flex flex-row gap-5 mb-10">
+          <button
+            class="px-2 py-1 drop-shadow-md duration-500 transform active:scale-75 transition-transform bg-white rounded-md"
+          >
+            <img :src="GoogleAuth" alt="" class="w-8" />
+          </button>
+          <button
+            class="px-2 py-1 drop-shadow-md duration-500 transform active:scale-75 transition-transform bg-white rounded-md"
+          >
+            <img :src="FBAuth" alt="" class="w-9" />
+          </button>
+          <button
+            class="px-2 py-1 drop-shadow-md duration-500 transform active:scale-75 transition-transform bg-white rounded-md"
+          >
+            <img :src="GithubAuth" alt="" class="w-8" />
+          </button>
+        </div>
+        <p class="w-full text-gray-400 text-xs text-center mb-8">
+          Or continue using your custom E-mail
+        </p>
+        <label
+          for=""
+          class="self-start text-xs font-semibold text-gray-400 mb-2"
+          >Email</label
+        >
+        <TextInput class="w-full" placeholder="@mail.com" />
+        <label
+          for=""
+          class="self-start text-xs font-semibold text-gray-400 mb-2 mt-4"
+          >Password</label
+        >
+        <TextInput class="w-full" placeholder="Password" type="password" />
+        <div
+          class="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full self-start mt-4"
+        >
+          <div class="flex flex-row items-center">
+            <input type="checkbox" />
+            <small class="ml-1 font-light text-gray-400">Remember Me</small>
+          </div>
+          <a href="" class="text-blue-500 text-xs font-normal"
+            >Forgot Password?</a
+          >
+        </div>
+        <button
+          class="mt-4 px-4 py-2 w-full text-xs text-white drop-shadow-md duration-500 transform active:scale-75 transition-transform bg-blue-500 rounded-sm"
+        >
+          SIGN IN
+        </button>
+      </div>
+    </div>
+    <div
+      class="w-1/2 h-full sm:flex flex-col justify-center items-center bg-gray-800 px-12 hidden"
+    >
+      <div class="m-auto w-full">
+        <p class="text-gray-500 text-2xl text-center">
+          Don't know where to start? Or need some tutorial?
+        </p>
+        <p class="text-gray-200 font-semibold text-xl text-center mb-10">
+          WE COVERED YOU!!
+        </p>
+        <div
+          class="flex flex-col lg:flex-row w-full justify-between mt-6 gap-3"
+        >
+          <div class="w-full flex flex-col items-center justify-center gap-2">
+            <div class="py-3 px-3 rounded-full w-16 bg-blue-50">
+              <img :src="GatherImage" alt="" class="w-11" />
+            </div>
+            <p class="text-gray-400 text-sm text-center">GATHER INFORMATION</p>
+          </div>
+          <div class="w-full flex flex-col items-center justify-center gap-2">
+            <div class="py-3 px-3 rounded-full w-16 bg-cyan-200">
+              <img :src="WorkingImage" alt="" class="w-12" />
+            </div>
+            <p class="text-gray-400 text-sm text-center">DO IT NOW</p>
+          </div>
+          <div class="w-full flex flex-col items-center justify-center gap-2">
+            <div class="py-3 px-3 rounded-full w-16 bg-green-200">
+              <img :src="ReadyToGoImage" alt="" class="w-12" />
+            </div>
+            <p class="text-gray-400 text-sm text-center">AND READY TO GO</p>
+          </div>
+        </div>
+        <div
+          class="flex flex-row justify-between items-start w-full mt-10 px-9"
+        >
+          <button
+            class="disabled flex flex-row items-center justify-center bg-blue-100 rounded-md py-1 px-1 gap-2 cursor-not-allowed"
+          >
+            <img :src="ArrowImage" alt="" class="w-4 rotate-180" />
+            <p class="text-xs text-gray-400">PREVIOUS</p>
+          </button>
+          <button
+            class="disabled flex flex-row items-center justify-center bg-blue-300 rounded-md py-1 px-1 gap-2 duration-500 transform active:scale-75 transition-transform"
+          >
+            <p class="text-xs text-gray-800">NEXT</p>
+            <img :src="ArrowImage" alt="" class="w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
 </template>
 
-<script lang="ts">
-export default {};
+<script lang="ts" setup>
+import TextInput from "@/components/TextInput.vue";
+import LogoImage from "@/assets/images/logo-no-background.png";
+import ArrowLeftBackImage from "@/assets/images/arrow-left-back.png";
+import FBAuth from "@/assets/images/fb-auth.png";
+import GoogleAuth from "@/assets/images/google-auth.png";
+import GithubAuth from "@/assets/images/github-auth.png";
+import GatherImage from "@/assets/images/gather.png";
+import WorkingImage from "@/assets/images/working.png";
+import ReadyToGoImage from "@/assets/images/finish.png";
+import ArrowImage from "@/assets/images/arrow.png";
 </script>
 
-<style lang="scss">
-.custom-shape-divider-bottom-1691573379 {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  overflow: hidden;
-  line-height: 0;
-  transform: rotate(180deg);
-}
-
-.custom-shape-divider-bottom-1691573379 svg {
-  position: relative;
-  display: block;
-  width: calc(157% + 1.3px);
-  height: 369px;
-}
-
-.custom-shape-divider-bottom-1691573379 .shape-fill {
-  fill: #267dff;
-}
-</style>
+<style lang="scss"></style>

@@ -10,10 +10,9 @@
       </p>
       <div class="quick-connect mt-16 text-lg flex flex-col gap-3">
         <p class="text-gray-700">Get into Meeting now</p>
-        <TextInput class="md:w-1/2 w-full" size="sm" placeholder="Room ID" />
+        <TextInput class="md:w-1/2 w-full" placeholder="Room ID" />
         <TextInput
           class="md:w-1/2 w-full"
-          size="sm"
           placeholder="Password"
           type="password"
         />
