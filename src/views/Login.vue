@@ -17,6 +17,7 @@
         </p>
         <div class="flex flex-row gap-5 mb-10">
           <button
+            @click="login"
             class="px-2 py-1 drop-shadow-md duration-500 transform active:scale-75 transition-transform bg-white rounded-md"
           >
             <img :src="GoogleAuth" alt="" class="w-8" />
@@ -129,6 +130,32 @@ import GatherImage from "@/assets/images/gather.png";
 import WorkingImage from "@/assets/images/working.png";
 import ReadyToGoImage from "@/assets/images/finish.png";
 import ArrowImage from "@/assets/images/arrow.png";
-</script>
+import { googleTokenLogin } from "vue3-google-login";
+import { useSigninWithGoogle, setUserTokens } from "./../libs/useUser";
+import { useFetchEffect } from "./../libs/useFetchEffect";
+import { useRouter } from "vue-router";
 
+const { fetch, ...handleGoogleLogin } = useSigninWithGoogle();
+const router = useRouter();
+
+const login = () => {
+  googleTokenLogin().then((response) => {
+    if (response?.access_token) {
+      fetch(response.access_token);
+    }
+  });
+};
+
+useFetchEffect(handleGoogleLogin, {
+  onData: (_data: any) => {
+    if (_data?.accessToken && _data?.refreshToken) {
+      setUserTokens({
+        accessToken: _data.accessToken,
+        refreshToken: _data.refreshToken,
+      });
+      window.location.replace("/");
+    }
+  },
+});
+</script>
 <style lang="scss"></style>

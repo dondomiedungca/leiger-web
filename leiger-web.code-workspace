@@ -7,6 +7,9 @@
       "path": "../leiger-api"
     },
     {
+      "path": "../skychat-mobile"
+    },
+    {
       "path": "../skychat-api"
     }
   ],
