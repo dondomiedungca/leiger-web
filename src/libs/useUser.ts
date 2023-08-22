@@ -3,7 +3,6 @@ import { HTTPMethod, useApi } from "./useApi";
 import { useCookies } from "./useCookies";
 import { useAuthStore } from "../stores/useAuth.store";
 import jwt_decode from "jwt-decode";
-import { useRouter } from "vue-router";
 
 export const useSigninWithGoogle = () => {
   const { isLoading, data, success, error, fetch } = useApi(

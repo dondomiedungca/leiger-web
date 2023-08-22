@@ -28,5 +28,19 @@ export const router = createRouter({
         else next();
       },
     },
+    {
+      name: "room",
+      path: "/room",
+      component: () => import("@/views/Room.vue"),
+      beforeEnter: async (_to, _from, next) => {
+        if (
+          Object.keys(_to.query).indexOf("meeting_sid") !== -1 &&
+          !!_to.query?.meeting_sid
+        ) {
+          next();
+        }
+        next({ name: "home" });
+      },
+    },
   ],
 });

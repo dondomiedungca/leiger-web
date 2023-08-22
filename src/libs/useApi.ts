@@ -61,7 +61,7 @@ export const useApi = (
   const isLoading = ref<boolean>(false);
   const data = ref<any>(undefined);
   const success = ref<boolean>(false);
-  const error = ref<any>(undefined);
+  const error = ref<any>(false);
   const { getCookie, setCookie } = useCookies();
 
   const url = overrideURL ? path : `${BASE_URL}${path}`;
@@ -94,10 +94,9 @@ export const useApi = (
       response = localResponse.data;
       data.value = localResponse.data;
       success.value = true;
-    } catch (error: any) {
-      console.log(error);
-      error.value = error;
-      if ((error as any)?.response?.data?.statusCode == 403) {
+    } catch (e: any) {
+      error.value = e;
+      if ((e as any)?.response?.data?.statusCode == 403) {
         const REFRESH_TOKEN = getCookie("REFRESH_TOKEN");
         const refetch = await axios.post(
           `${BASE_URL}/token/refresh-token`,
@@ -128,8 +127,8 @@ export const useApi = (
           response = localResponse.data;
         } else {
           response = {
-            ...(error as any)?.response?.data,
-            error: new Error("Forbidden error"),
+            ...(e as any)?.response?.data,
+            e: new Error("Forbidden error"),
           };
         }
       }
@@ -142,10 +141,10 @@ export const useApi = (
   onUnmounted(() => source.cancel());
 
   return {
-    isLoading: isLoading,
-    data: data,
-    success: success,
-    error: error,
+    isLoading,
+    data,
+    success,
+    error,
     fetch,
   };
 };
