@@ -201,18 +201,22 @@
               icon="fa-solid fa-users"
             />
             <p class="font-oxygen text-xs text-gray-500 select-none">
-              Participant ({{ peers.connections.length + 1 }})
+              Participant ({{ Object.keys(peers).length + 1 }})
             </p>
           </div>
           <div
             id="video-container"
             class="w-full bg-gray-200 mt-2 flex flex-row flex-wrap gap-2 content-start justify-center p-2"
           >
-            <div class="video-player-box">
+            <div
+              class="video-player-box mb-2"
+              v-for="(peer, ui) in peers"
+              :key="ui"
+            >
               <video
-                v-for="peer in peers.connections"
                 class="video-player aspect-video bg-black rounded-lg"
                 :srcObject="peer.remoteStreamRef"
+                :id="ui"
                 autoplay
                 playsinline
               ></video>
@@ -261,16 +265,18 @@ const router = useRouter();
 const authStore = useAuthStore();
 const { auth } = storeToRefs(authStore);
 
-const tools = reactive({ isMuted: false, isOpenCam: true });
+const tools = reactive({ isMuted: true, isOpenCam: true });
 
 const localStreamRef = ref<MediaStream | undefined>();
-const peers = reactive<{
-  connections: Array<{
-    user_identifier: string;
-    peerConnection: RTCPeerConnection;
-    remoteStreamRef: MediaStream;
-  }>;
-}>({ connections: [] });
+const peers = reactive<
+  Record<
+    string,
+    {
+      peerConnection: RTCPeerConnection;
+      remoteStreamRef: MediaStream;
+    }
+  >
+>({});
 
 const socket = ref<any>();
 
@@ -308,10 +314,8 @@ const initLocalMediaStream = async () => {
 };
 
 const onIce = (_socket_data: Record<string, any>) => {
-  const localPeers = toRaw(peers.connections);
-  const peer = localPeers.find(
-    (peer) => peer.user_identifier === _socket_data.user_identifier
-  );
+  const localPeers = toRaw(peers);
+  const peer = localPeers[_socket_data.user_identifier];
   if (peer?.peerConnection) {
     peer.peerConnection.addIceCandidate(_socket_data.payload);
   }
@@ -344,31 +348,16 @@ const roomAndConnectionInitializer = async () => {
     });
 
     socket.value.on("user_leave", (_socket_data: Record<string, any>) => {
-      const previous = [...peers.connections];
-      const index = previous.findIndex(
-        (prev) => prev.user_identifier === _socket_data.user_identifier
-      );
-      previous.splice(index, 1);
-      peers.connections = previous;
+      delete peers[_socket_data.user_identifier];
     });
   }
 };
 
 const createPeerConnection = async (user_identifier: string) => {
-  const peerConnection = ref(new RTCPeerConnection(SERVERS));
-  const remoteStreamRef = ref(new MediaStream());
-
-  const check = peers.connections.find(
-    (peer) => peer.user_identifier === user_identifier
-  );
-
-  if (!check) {
-    peers.connections.push({
-      user_identifier,
-      peerConnection: peerConnection.value,
-      remoteStreamRef: remoteStreamRef.value,
-    });
-  }
+  peers[user_identifier] = {
+    peerConnection: new RTCPeerConnection(SERVERS),
+    remoteStreamRef: new MediaStream(),
+  };
 
   if (!localStreamRef.value) {
     localStreamRef.value = await navigator.mediaDevices.getUserMedia({
@@ -382,16 +371,19 @@ const createPeerConnection = async (user_identifier: string) => {
   }
 
   localStreamRef.value!.getTracks().forEach((track: any) => {
-    peerConnection.value.addTrack(track, localStreamRef.value!);
+    peers[user_identifier].peerConnection.addTrack(
+      track,
+      localStreamRef.value!
+    );
   });
 
-  peerConnection.value.ontrack = (event: any) => {
+  peers[user_identifier].peerConnection.ontrack = (event: any) => {
     event.streams[0].getTracks().forEach((track: any) => {
-      remoteStreamRef.value!.addTrack(track);
+      peers[user_identifier].remoteStreamRef!.addTrack(track);
     });
   };
 
-  peerConnection.value.onicecandidate = async (event: any) => {
+  peers[user_identifier].peerConnection.onicecandidate = async (event: any) => {
     if (event.candidate) {
       socket.value.emit("ice_candidate", {
         meeting_id: decodedSession.value!.meeting_id,
@@ -404,10 +396,9 @@ const createPeerConnection = async (user_identifier: string) => {
 
 const createOffer = async (user_identifier: string) => {
   await createPeerConnection(user_identifier);
+  const localPeers = toRaw(peers);
 
-  const peer = peers.connections.find(
-    (peer) => peer.user_identifier === user_identifier
-  );
+  const peer = localPeers[user_identifier];
 
   let offer = await peer!.peerConnection.createOffer();
   await peer!.peerConnection.setLocalDescription(offer);
@@ -421,10 +412,9 @@ const createOffer = async (user_identifier: string) => {
 
 const createAnswer = async (user_identifier: string, payload: any) => {
   await createPeerConnection(user_identifier);
+  const localPeers = toRaw(peers);
 
-  const peer = peers.connections.find(
-    (peer) => peer.user_identifier === user_identifier
-  );
+  const peer = localPeers[user_identifier];
 
   await peer!.peerConnection.setRemoteDescription(payload);
 
@@ -439,9 +429,9 @@ const createAnswer = async (user_identifier: string, payload: any) => {
 };
 
 const addAnswer = async (answer: any, _user_identifier: string) => {
-  const peer = peers.connections.find(
-    (peer) => peer.user_identifier === _user_identifier
-  );
+  const localPeers = toRaw(peers);
+
+  const peer = localPeers[_user_identifier];
 
   if (!peer!.peerConnection.currentRemoteDescription) {
     peer!.peerConnection.setRemoteDescription(answer);
@@ -523,7 +513,7 @@ video {
 }
 
 .video-player-box {
-  height: 140px;
+  height: 130px;
 }
 
 .video-player {
