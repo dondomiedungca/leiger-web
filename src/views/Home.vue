@@ -4,13 +4,18 @@
     <div class="left-side sm:w-1/2 w-full">
       <p class="md:text-4xl text-2xl text-gray-500 intro leading-tight">
         Leiger offer a both
-        <span class="bg-blue-400 text-white rounded-md px-2 py-0">FREE</span>
+        <span class="text-blue-500 font-bold">FREE</span>
         and paid version for video conference application that suits for your
         needs.
       </p>
       <div class="quick-connect mt-16 text-lg flex flex-col gap-3">
         <p class="text-gray-700">Get into Meeting now</p>
-        <div v-if="!!handleJoinMeeting.error.value">
+        <div
+          v-if="
+            !!handleJoinMeeting.error.value ||
+            handleJoinMeeting.data.value == false
+          "
+        >
           <div
             class="lg:w-1/2 w-full flex items-center p-4 mb-4 text-sm text-red-800 border border-red-300 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 dark:border-red-800"
             role="alert"
@@ -35,6 +40,9 @@
                   ", "
                 ) ||
                 handleJoinMeeting.error.value?.message ||
+                (handleJoinMeeting.error.value == false
+                  ? "Meeting ID or Password is incorrect"
+                  : undefined) ||
                 "Something went wrong. Please try again"
               }}
             </div>
@@ -314,7 +322,7 @@ import LogoImage from "@/assets/images/logo-no-background.png";
 import CreateImage from "@/assets/images/create.png";
 import ProceedImage from "@/assets/images/proceed.png";
 import { storeToRefs } from "pinia";
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { initFlowbite } from "flowbite";
 import { useCreateMeeting, useJoin } from "../libs/useMeeting";
 import { useAuthStore } from "../stores/useAuth.store";

@@ -1,5 +1,3 @@
-import { inject } from "vue";
-
 export const useCookies = () => {
   function setCookie(cname: string, cvalue: any, exdays: number = 1) {
     const d = new Date();
@@ -35,9 +33,14 @@ export const useCookies = () => {
     }
   }
 
+  function deleteCookie(name: string, path = "/") {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
+  }
+
   return {
     checkCookie,
     getCookie,
     setCookie,
+    deleteCookie,
   };
 };

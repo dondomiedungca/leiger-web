@@ -29,12 +29,83 @@
         TRY OUR PREMIUM
       </button>
       <router-link
+        v-if="!auth.is_authenticated"
         to="/login"
         class="border-2 border-blue-400 text-gray-800 text-xs h-9 px-3 rounded-xl justify-center hidden mda:flex flex-row items-center"
       >
         <img :src="LoginArrowIImage" alt="" class="w-6" />
         LOGIN
       </router-link>
+
+      <Menu as="div" class="relative text-left hidden mda:block cursor-pointer">
+        <MenuButton class="inline-flex w-full justify-center mt-1">
+          <img
+            v-if="auth.is_authenticated"
+            class="w-8 rounded"
+            :src="auth.user?.user_meta.profile_photo"
+          />
+        </MenuButton>
+
+        <transition
+          enter-active-class="transition ease-out duration-100"
+          enter-from-class="transform opacity-0 scale-95"
+          enter-to-class="transform opacity-100 scale-100"
+          leave-active-class="transition ease-in duration-75"
+          leave-from-class="transform opacity-100 scale-100"
+          leave-to-class="transform opacity-0 scale-95"
+        >
+          <MenuItems
+            class="absolute right-0 z-10 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+          >
+            <div class="py-1">
+              <MenuItem v-slot="{ active }">
+                <a
+                  href="#"
+                  :class="[
+                    active ? 'bg-gray-100 text-gray-600' : 'text-gray-700',
+                    'block px-4 py-2 text-xs font-oxygen',
+                  ]"
+                  >DASHBOARD</a
+                >
+              </MenuItem>
+              <MenuItem v-slot="{ active }">
+                <a
+                  href="#"
+                  :class="[
+                    active ? 'bg-gray-100 text-gray-600' : 'text-gray-700',
+                    'block px-4 py-2 text-xs font-oxygen',
+                  ]"
+                  >BILLING</a
+                >
+              </MenuItem>
+              <MenuItem v-slot="{ active }">
+                <a
+                  href="#"
+                  :class="[
+                    active ? 'bg-gray-100 text-gray-600' : 'text-gray-700',
+                    'block px-4 py-2 text-xs font-oxygen',
+                  ]"
+                  >ACCOUNT SETTINGS</a
+                >
+              </MenuItem>
+            </div>
+            <div class="py-1">
+              <MenuItem v-slot="{ active }">
+                <a
+                  @click="logout"
+                  href="#"
+                  :class="[
+                    active ? 'bg-gray-100 text-red-400' : 'text-gray-700',
+                    'block px-4 py-2 text-xs font-oxygen',
+                  ]"
+                  >LOGOUT</a
+                >
+              </MenuItem>
+            </div>
+          </MenuItems>
+        </transition>
+      </Menu>
+
       <button
         @click="handleToggle"
         class="block mda:hidden border-2 border-blue-300 p-1 rounded group"
@@ -65,39 +136,65 @@
       >TRY OUR PREMIUM</a
     >
     <router-link
+      v-if="!auth?.is_authenticated"
       to="/login"
       class="border-2 border-blue-400 text-gray-800 text-xs justify-center h-9 px-3 rounded-xl flex flex-row items-center mb-3 xs:w-1/3"
     >
       <img :src="LoginArrowIImage" alt="" class="w-6" />
       LOGIN
     </router-link>
+    <div
+      v-if="auth.is_authenticated"
+      class="px-3 py-3 rounded-md bg-blue-100 mb-3"
+    >
+      <div>
+        <a class="text-xs text-gray-600 font-oxygen" href="#">DASHBOARD</a>
+      </div>
+      <div>
+        <a class="text-xs text-gray-600 font-oxygen" href="#">BILLING</a>
+      </div>
+      <div>
+        <a class="text-xs text-gray-600 font-oxygen" href="#"
+          >ACCOUNT SETTINGS</a
+        >
+      </div>
+      <div>
+        <a class="text-xs text-red-400 font-oxygen" href="#">LOGOUT</a>
+      </div>
+    </div>
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import Logo from "@/assets/images/logo-no-background.png";
 import LoginArrowIImage from "@/assets/images/login-arrow.png";
 import Toggler from "@/assets/images/toggler.png";
 import { ref } from "vue";
+import { storeToRefs } from "pinia";
+import { useAuthStore } from "../stores/useAuth.store";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/vue";
+import { useCookies } from "../libs/useCookies";
+import { useRouter } from "vue-router";
 
-export default {
-  setup() {
-    const LogoImage = ref(Logo);
-    const TogglerImage = ref(Toggler);
-    const isToggled = ref(false);
+const LogoImage = ref(Logo);
+const TogglerImage = ref(Toggler);
+const isToggled = ref(false);
+const authStore = useAuthStore();
+const { auth } = storeToRefs(authStore);
+const { deleteCookie } = useCookies();
+const router = useRouter();
 
-    const handleToggle = () => {
-      isToggled.value = !isToggled.value;
-    };
+const handleToggle = () => {
+  isToggled.value = !isToggled.value;
+};
 
-    return {
-      LogoImage,
-      TogglerImage,
-      LoginArrowIImage,
-      handleToggle,
-      isToggled,
-    };
-  },
+const logout = () => {
+  deleteCookie("ACCESS_TOKEN");
+  deleteCookie("REFRESH_TOKEN");
+  deleteCookie("MEETING_SESSION");
+  auth.value.is_authenticated = false;
+  auth.value.user = undefined;
+  window.location.href = "/";
 };
 </script>
 
