@@ -210,8 +210,9 @@
           >
             <div class="video-player-box">
               <video
+                v-for="remote in remotes"
                 class="video-player aspect-video bg-black rounded-lg"
-                :srcObject="remoteStreamRef"
+                :srcObject="remote.remoteStreamRef"
                 autoplay
                 playsinline
               ></video>
@@ -244,7 +245,7 @@
 
 <script lang="ts" setup>
 import Logo from "@/assets/images/logo-no-background.png";
-import { onMounted, reactive, ref, watch } from "vue";
+import { onMounted, reactive, ref, toRaw } from "vue";
 import { storeToRefs } from "pinia";
 import { useCookies } from "../libs/useCookies";
 import { useValidateSession } from "../libs/useMeeting";
@@ -263,8 +264,12 @@ const { auth } = storeToRefs(authStore);
 const tools = reactive({ isMuted: false, isOpenCam: true });
 
 const localStreamRef = ref<MediaStream | undefined>();
-const remoteStreamRef = ref<MediaStream | undefined>();
-const peerConnection = ref();
+const remotes = ref<
+  Array<{ user_identifier: string; remoteStreamRef: MediaStream }>
+>([]);
+const peers = reactive<
+  Array<{ user_identifier: string; peerConnection: RTCPeerConnection }>
+>([]);
 
 const socket = ref<any>();
 
@@ -301,6 +306,16 @@ const initLocalMediaStream = async () => {
   });
 };
 
+const onIce = (_socket_data: Record<string, any>) => {
+  const localPeers = toRaw(peers);
+  const peer = localPeers.find(
+    (peer) => peer.user_identifier === _socket_data.user_identifier
+  );
+  if (peer?.peerConnection) {
+    peer.peerConnection.addIceCandidate(_socket_data.payload);
+  }
+};
+
 const roomAndConnectionInitializer = async () => {
   const BASE_URL = import.meta.env.VITE_BACKEND_API;
 
@@ -317,11 +332,7 @@ const roomAndConnectionInitializer = async () => {
       createOffer(_socket_data.user_identifier);
     });
 
-    socket.value.on("ice_candidate", (_socket_data: Record<string, any>) => {
-      if (peerConnection.value) {
-        peerConnection.value.addIceCandidate(_socket_data.payload);
-      }
-    });
+    socket.value.on("ice_candidate", onIce);
 
     socket.value.on("answer", (_socket_data: Record<string, any>) => {
       addAnswer(_socket_data.payload, _socket_data.user_identifier);
@@ -330,13 +341,44 @@ const roomAndConnectionInitializer = async () => {
     socket.value.on("offer", (_socket_data: Record<string, any>) => {
       createAnswer(_socket_data.user_identifier, _socket_data.payload);
     });
+
+    socket.value.on("user_leave", (_socket_data: Record<string, any>) => {
+      const previous = [...remotes.value];
+      const index = previous.findIndex(
+        (prev) => prev.user_identifier === _socket_data.user_identifier
+      );
+      previous.splice(index, 1);
+      remotes.value = previous;
+    });
   }
 };
 
 const createPeerConnection = async (user_identifier: string) => {
-  peerConnection.value = new RTCPeerConnection(SERVERS);
+  const peerConnection = ref(new RTCPeerConnection(SERVERS));
+  const remoteStreamRef = ref(new MediaStream());
 
-  remoteStreamRef.value = new MediaStream();
+  const check = remotes.value.find(
+    (remote) => remote.user_identifier === user_identifier
+  );
+
+  const check2 = peers.find((peer) => peer.user_identifier === user_identifier);
+
+  if (!check) {
+    remotes.value = [
+      ...remotes.value,
+      {
+        user_identifier,
+        remoteStreamRef: remoteStreamRef.value,
+      },
+    ];
+  }
+
+  if (!check2) {
+    peers.push({
+      user_identifier,
+      peerConnection: peerConnection.value,
+    });
+  }
 
   if (!localStreamRef.value) {
     localStreamRef.value = await navigator.mediaDevices.getUserMedia({
@@ -350,7 +392,7 @@ const createPeerConnection = async (user_identifier: string) => {
   }
 
   localStreamRef.value!.getTracks().forEach((track: any) => {
-    peerConnection.value.addTrack(track, localStreamRef.value);
+    peerConnection.value.addTrack(track, localStreamRef.value!);
   });
 
   peerConnection.value.ontrack = (event: any) => {
@@ -363,7 +405,7 @@ const createPeerConnection = async (user_identifier: string) => {
     if (event.candidate) {
       socket.value.emit("ice_candidate", {
         meeting_id: decodedSession.value!.meeting_id,
-        user_identifier,
+        user_identifier: decodedSession.value!.user_identifier,
         payload: event.candidate,
       });
     }
@@ -373,8 +415,10 @@ const createPeerConnection = async (user_identifier: string) => {
 const createOffer = async (user_identifier: string) => {
   await createPeerConnection(user_identifier);
 
-  let offer = await peerConnection.value.createOffer();
-  await peerConnection.value.setLocalDescription(offer);
+  const peer = peers.find((peer) => peer.user_identifier === user_identifier);
+
+  let offer = await peer!.peerConnection.createOffer();
+  await peer!.peerConnection.setLocalDescription(offer);
 
   socket.value.emit("offer", {
     meeting_id: decodedSession.value!.meeting_id,
@@ -386,10 +430,12 @@ const createOffer = async (user_identifier: string) => {
 const createAnswer = async (user_identifier: string, payload: any) => {
   await createPeerConnection(user_identifier);
 
-  await peerConnection.value.setRemoteDescription(payload);
+  const peer = peers.find((peer) => peer.user_identifier === user_identifier);
 
-  let answer = await peerConnection.value.createAnswer();
-  await peerConnection.value.setLocalDescription(answer);
+  await peer!.peerConnection.setRemoteDescription(payload);
+
+  let answer = await peer!.peerConnection.createAnswer();
+  await peer!.peerConnection.setLocalDescription(answer);
 
   socket.value.emit("answer", {
     meeting_id: decodedSession.value!.meeting_id,
@@ -399,8 +445,10 @@ const createAnswer = async (user_identifier: string, payload: any) => {
 };
 
 const addAnswer = async (answer: any, _user_identifier: string) => {
-  if (!peerConnection.value.currentRemoteDescription) {
-    peerConnection.value.setRemoteDescription(answer);
+  const peer = peers.find((peer) => peer.user_identifier === _user_identifier);
+
+  if (!peer!.peerConnection.currentRemoteDescription) {
+    peer!.peerConnection.setRemoteDescription(answer);
   }
 };
 
