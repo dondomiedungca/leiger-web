@@ -52,12 +52,14 @@
           class="lg:w-1/2 w-full"
           v-model="meetingId"
           placeholder="Room ID"
+          @onPressEnter="joinMeeting"
         />
         <TextInput
           class="lg:w-1/2 w-full"
           v-model="password"
           placeholder="Password"
           type="password"
+          @onPressEnter="joinMeeting"
         />
         <button
           @click="joinMeeting"
@@ -234,11 +236,20 @@
             <label for="" class="text-xs text-gray-500"
               >Auto-generated Meeting ID</label
             >
-            <TextInput
-              disabled
-              class="w-full bg-gray-100"
-              v-model="generatedMeetingId"
-            />
+            <div class="flex flex-row items-center gap-2">
+              <TextInput
+                id="meeting_id"
+                disabled
+                class="w-full bg-gray-100"
+                v-model="generatedMeetingId"
+              />
+              <button class="group" @click="copyClipboard">
+                <fa
+                  class="text-slate-400 duration-300 group-hover:text-blue-400"
+                  icon="fa-solid fa-copy"
+                />
+              </button>
+            </div>
           </div>
           <div>
             <label for="" class="text-xs text-gray-500">Password</label>
@@ -355,6 +366,14 @@ const createPassword = ref<string>("");
 
 const meetingId = ref<string>("");
 const password = ref<string>("");
+
+const copyClipboard = async () => {
+  try {
+    await navigator.clipboard.writeText(generatedMeetingId.value || "");
+  } catch (err) {
+    console.error("Failed to copy: ", err);
+  }
+};
 
 const createMeeting = () => {
   fetch({

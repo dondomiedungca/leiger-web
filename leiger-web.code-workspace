@@ -5,9 +5,6 @@
     },
     {
       "path": "../leiger-api"
-    },
-    {
-      "path": "../skychat-api"
     }
   ],
   "settings": {

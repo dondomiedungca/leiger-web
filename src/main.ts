@@ -20,6 +20,7 @@ import {
   faRightFromBracket,
   faVideoSlash,
   faPaperPlane,
+  faCopy,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -38,7 +39,8 @@ library.add(
   faDisplay,
   faRightFromBracket,
   faMessage,
-  faPaperPlane
+  faPaperPlane,
+  faCopy
 );
 
 app.use(router);

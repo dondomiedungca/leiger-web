@@ -67,42 +67,70 @@
     <!-- main call container -->
     <section class="section-2 bg-white px-5 py-5 flex flex-col">
       <div
-        class="h-20 w-full flex flex-row items-center gap-5 border-2 border-white border-b-gray-200"
+        class="h-12 mda:h-20 w-full flex flex-row items-center gap-2 mda:gap-5 border-2 border-white border-b-gray-200"
       >
         <button
           @click="back"
-          class="px-5 py-3 rounded-lg group duration-300 bg-blue-50 hover:bg-blue-100"
+          class="px-3 py-1 mda:px-5 mda:py-3 rounded-lg group duration-300 bg-blue-50 hover:bg-blue-100"
         >
           <fa
             class="text-slate-400 duration-300 group-hover:text-blue-400"
             icon="fa-solid fa-chevron-left"
           />
         </button>
-        <p class="font-oxygen font-semibold text-gray-300">
+        <p class="font-oxygen text:xs font-semibold text-gray-300">
           MEETING ID -
-          <span class="font-semibold text-gray-500">{{
+          <span id="meeting_id" class="font-semibold text-gray-500">{{
             decodedSession?.meeting_id
           }}</span>
         </p>
+        <button class="group" @click="copyClipboard">
+          <fa
+            class="text-slate-400 duration-300 group-hover:text-blue-400"
+            icon="fa-solid fa-copy"
+          />
+        </button>
       </div>
-      <div class="h-10 w-full flex flex-row-reverse items-center gap-3 my-2">
-        <p class="font-bold text-blue-400 font-oxygen text-sm cursor-pointer">
+      <div
+        class="h-8 mda:h-10 w-full flex flex-row-reverse items-center gap-1 mda:gap-3 my-1 mda:my-2"
+      >
+        <p
+          class="font-bold text-blue-400 font-oxygen text:xs mda:text-sm cursor-pointer p-0"
+        >
           INVITE PEOPLE
         </p>
         <fa
           class="text-blue-500 cursor-pointer"
           icon="fa-solid fa-square-plus"
-          size="2x"
+          :size="`${screen_width >= 896 ? '2x' : '1x'}`"
         />
       </div>
       <div class="w-full flex flex-col h-full gap-2 relative">
-        <div class="flex-grow mb-5">
+        <div class="flex-grow">
           <video
-            class="rounded-lg h-4/5 w-full bg-gray-700 aspect-video"
+            class="rounded-lg h-1/2 mda:h-4/5 w-full bg-black aspect-video"
             :srcObject="localStreamRef"
             autoplay
             playsinline
           ></video>
+          <div
+            id="video-container-row"
+            class="mda:hidden flex flex-row gap-3 items-center mt-6 h-1/4 overflow-x-auto overflow-y-hidden pb-2"
+          >
+            <div
+              class="video-player-box h-full min-w-max"
+              v-for="(peer, ui) in peers"
+              :key="ui"
+            >
+              <video
+                class="video-player aspect-video bg-black rounded-lg"
+                :srcObject="peer.remoteStreamRef"
+                :id="ui"
+                autoplay
+                playsinline
+              ></video>
+            </div>
+          </div>
         </div>
         <div
           class="absolute bottom-0 flex flex-row justify-between items-center h-1/5 w-full border-white border-t-gray-200 border-2"
@@ -189,13 +217,13 @@
     </section>
 
     <!-- sharing section -->
-    <section class="section-3 py-5 px-5 pl-0">
+    <section class="section-3 py-5 px-5 pl-0 hidden mda:block">
       <div
         id="sharing-container"
         class="rounded-lg bg-gray-50 w-full h-full py-4 px-4 flex flex-col"
       >
         <div class="w-full flex-grow">
-          <div class="flex flex-row items-center justify-center">
+          <div class="flex flex-row items-center gap-1 justify-center">
             <fa
               class="text-slate-400 duration-300 group-hover:text-blue-400"
               icon="fa-solid fa-users"
@@ -206,10 +234,10 @@
           </div>
           <div
             id="video-container"
-            class="w-full bg-gray-200 mt-2 flex flex-row flex-wrap gap-2 content-start justify-center p-2"
+            class="w-full bg-black mt-2 flex flex-row flex-wrap gap-5 content-start justify-center p-5"
           >
             <div
-              class="video-player-box mb-2"
+              class="video-player-box mb-1 border-2 border-blue-400 rounded-md h-44 min-w-max"
               v-for="(peer, ui) in peers"
               :key="ui"
             >
@@ -266,6 +294,7 @@ const authStore = useAuthStore();
 const { auth } = storeToRefs(authStore);
 
 const tools = reactive({ isMuted: true, isOpenCam: true });
+const screen_width = ref<number>(10000);
 
 const localStreamRef = ref<MediaStream | undefined>();
 const peers = reactive<
@@ -465,6 +494,21 @@ const back = () => {
   window.location.href = "/";
 };
 
+var onresize = function () {
+  screen_width.value = document.body.clientWidth;
+};
+
+window.addEventListener("resize", onresize);
+
+const copyClipboard = async () => {
+  let text = document.getElementById("meeting_id")?.innerHTML;
+  try {
+    await navigator.clipboard.writeText(text || "");
+  } catch (err) {
+    console.error("Failed to copy: ", err);
+  }
+};
+
 useFetchEffect(handleValidateSession, {
   onData: async (_data) => {
     if (_data == false) {
@@ -486,16 +530,25 @@ onMounted(() => {
 <style lang="scss" scoped>
 .section-1 {
   min-width: 80px;
-  width: 8%;
+  width: 6%;
+
+  @media screen and (max-width: 896px) {
+    width: 10%;
+  }
 }
 
 .section-2 {
   min-width: 400px;
   width: 52%;
+
+  @media screen and (max-width: 896px) {
+    min-width: 100px;
+    width: 96%;
+  }
 }
 
 .section-3 {
-  width: 40%;
+  width: 42%;
 }
 
 video {
@@ -505,11 +558,7 @@ video {
 
 #video-container {
   height: calc(100vh - 305px);
-  overflow-y: scroll;
-}
-
-.video-player-box {
-  height: 130px;
+  overflow-y: auto;
 }
 
 .video-player {
@@ -519,7 +568,8 @@ video {
 
 /* width */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 /* Track */
