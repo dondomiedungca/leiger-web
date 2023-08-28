@@ -315,7 +315,7 @@ const initLocalMediaStream = async () => {
 
 const onIce = (_socket_data: Record<string, any>) => {
   const localPeers = toRaw(peers);
-  const peer = localPeers[_socket_data.user_identifier];
+  const peer = localPeers[_socket_data.socket_id];
   if (peer?.peerConnection) {
     peer.peerConnection.addIceCandidate(_socket_data.payload);
   }
@@ -328,33 +328,32 @@ const roomAndConnectionInitializer = async () => {
     socket.value = io(`${BASE_URL}/meeting`, {
       query: {
         meeting_id: decodedSession.value!.meeting_id,
-        user_identifier: decodedSession.value!.user_identifier,
       },
       forceNew: true,
     });
 
     socket.value.on("join", (_socket_data: Record<string, any>) => {
-      createOffer(_socket_data.user_identifier);
+      createOffer(_socket_data.socket_id);
     });
 
     socket.value.on("ice_candidate", onIce);
 
     socket.value.on("answer", (_socket_data: Record<string, any>) => {
-      addAnswer(_socket_data.payload, _socket_data.user_identifier);
+      addAnswer(_socket_data.payload, _socket_data.socket_id);
     });
 
     socket.value.on("offer", (_socket_data: Record<string, any>) => {
-      createAnswer(_socket_data.user_identifier, _socket_data.payload);
+      createAnswer(_socket_data.payload, _socket_data.socket_id);
     });
 
     socket.value.on("user_leave", (_socket_data: Record<string, any>) => {
-      delete peers[_socket_data.user_identifier];
+      delete peers[_socket_data.socket_id];
     });
   }
 };
 
-const createPeerConnection = async (user_identifier: string) => {
-  peers[user_identifier] = {
+const createPeerConnection = async (socket_id: string) => {
+  peers[socket_id] = {
     peerConnection: new RTCPeerConnection(SERVERS),
     remoteStreamRef: new MediaStream(),
   };
@@ -371,50 +370,47 @@ const createPeerConnection = async (user_identifier: string) => {
   }
 
   localStreamRef.value!.getTracks().forEach((track: any) => {
-    peers[user_identifier].peerConnection.addTrack(
-      track,
-      localStreamRef.value!
-    );
+    peers[socket_id].peerConnection.addTrack(track, localStreamRef.value!);
   });
 
-  peers[user_identifier].peerConnection.ontrack = (event: any) => {
+  peers[socket_id].peerConnection.ontrack = (event: any) => {
     event.streams[0].getTracks().forEach((track: any) => {
-      peers[user_identifier].remoteStreamRef!.addTrack(track);
+      peers[socket_id].remoteStreamRef!.addTrack(track);
     });
   };
 
-  peers[user_identifier].peerConnection.onicecandidate = async (event: any) => {
+  peers[socket_id].peerConnection.onicecandidate = async (event: any) => {
     if (event.candidate) {
       socket.value.emit("ice_candidate", {
         meeting_id: decodedSession.value!.meeting_id,
-        user_identifier: decodedSession.value!.user_identifier,
         payload: event.candidate,
+        socket_id,
       });
     }
   };
 };
 
-const createOffer = async (user_identifier: string) => {
-  await createPeerConnection(user_identifier);
+const createOffer = async (socket_id: string) => {
+  await createPeerConnection(socket_id);
   const localPeers = toRaw(peers);
 
-  const peer = localPeers[user_identifier];
+  const peer = localPeers[socket_id];
 
   let offer = await peer!.peerConnection.createOffer();
   await peer!.peerConnection.setLocalDescription(offer);
 
   socket.value.emit("offer", {
     meeting_id: decodedSession.value!.meeting_id,
-    user_identifier: decodedSession.value!.user_identifier,
     payload: offer,
+    socket_id,
   });
 };
 
-const createAnswer = async (user_identifier: string, payload: any) => {
-  await createPeerConnection(user_identifier);
+const createAnswer = async (payload: any, socket_id: string) => {
+  await createPeerConnection(socket_id);
   const localPeers = toRaw(peers);
 
-  const peer = localPeers[user_identifier];
+  const peer = localPeers[socket_id];
 
   await peer!.peerConnection.setRemoteDescription(payload);
 
@@ -423,15 +419,15 @@ const createAnswer = async (user_identifier: string, payload: any) => {
 
   socket.value.emit("answer", {
     meeting_id: decodedSession.value!.meeting_id,
-    user_identifier: decodedSession.value!.user_identifier,
     payload: answer,
+    socket_id,
   });
 };
 
-const addAnswer = async (answer: any, _user_identifier: string) => {
+const addAnswer = async (answer: any, socket_id: string) => {
   const localPeers = toRaw(peers);
 
-  const peer = localPeers[_user_identifier];
+  const peer = localPeers[socket_id];
 
   if (!peer!.peerConnection.currentRemoteDescription) {
     peer!.peerConnection.setRemoteDescription(answer);
