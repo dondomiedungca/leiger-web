@@ -107,29 +107,24 @@
       </div>
       <div class="w-full flex flex-col h-full gap-2 relative">
         <div class="flex-grow">
-          <video
-            class="rounded-lg h-1/2 mda:h-4/5 w-full bg-black aspect-video"
+          <VideoComponent
             :srcObject="localStreamRef"
-            autoplay
-            playsinline
-          ></video>
+            classes="rounded-lg h-1/2 mda:h-4/5 w-full bg-black aspect-video border-2 border-blue-500"
+            :overrideClass="true"
+          />
           <div
             id="video-container-row"
             class="mda:hidden flex flex-row gap-3 items-center mt-6 h-1/4 overflow-x-auto overflow-y-hidden pb-2"
           >
-            <div
-              class="video-player-box h-full min-w-max"
+            <VideoComponent
               v-for="(peer, ui) in peers"
               :key="ui"
-            >
-              <video
-                class="video-player aspect-video bg-black rounded-lg"
-                :srcObject="peer.remoteStreamRef"
-                :id="ui"
-                autoplay
-                playsinline
-              ></video>
-            </div>
+              :id="ui"
+              :srcObject="peer.remoteStreamRef"
+              :showIcons="true"
+              :isOpenCam="open_cams.includes(ui)"
+              :isOpenMic="open_mics.includes(ui)"
+            />
           </div>
         </div>
         <div
@@ -236,19 +231,15 @@
             id="video-container"
             class="w-full bg-black mt-2 flex flex-row flex-wrap gap-5 content-start justify-center p-5"
           >
-            <div
-              class="video-player-box mb-1 border-2 border-blue-400 rounded-md h-44 min-w-max"
+            <VideoComponent
               v-for="(peer, ui) in peers"
               :key="ui"
-            >
-              <video
-                class="video-player aspect-video bg-black rounded-lg"
-                :srcObject="peer.remoteStreamRef"
-                :id="ui"
-                autoplay
-                playsinline
-              ></video>
-            </div>
+              :id="ui"
+              :srcObject="peer.remoteStreamRef"
+              :showIcons="true"
+              :isOpenCam="open_cams.includes(ui)"
+              :isOpenMic="open_mics.includes(ui)"
+            />
           </div>
         </div>
 
@@ -277,7 +268,7 @@
 
 <script lang="ts" setup>
 import Logo from "@/assets/images/logo-no-background.png";
-import { onMounted, reactive, ref, toRaw } from "vue";
+import { nextTick, onMounted, reactive, ref, toRaw } from "vue";
 import { storeToRefs } from "pinia";
 import { useCookies } from "../libs/useCookies";
 import { useValidateSession } from "../libs/useMeeting";
@@ -286,6 +277,7 @@ import { useRouter } from "vue-router";
 import { io } from "socket.io-client";
 import { useAuthStore } from "../stores/useAuth.store";
 import TextInput from "../components/TextInput.vue";
+import VideoComponent from "../components/VideoComponent.vue";
 
 const { getCookie } = useCookies();
 const { fetch, ...handleValidateSession } = useValidateSession();
@@ -293,8 +285,13 @@ const router = useRouter();
 const authStore = useAuthStore();
 const { auth } = storeToRefs(authStore);
 
-const tools = reactive({ isMuted: true, isOpenCam: true });
+const tools = reactive({
+  isMuted: JSON.parse(localStorage.getItem("isMuted") || "false"),
+  isOpenCam: JSON.parse(localStorage.getItem("isOpenCam") || "false"),
+});
 const screen_width = ref<number>(10000);
+const open_mics = ref<string[]>([]);
+const open_cams = ref<string[]>([]);
 
 const localStreamRef = ref<MediaStream | undefined>();
 const peers = reactive<
@@ -372,30 +369,62 @@ const roomAndConnectionInitializer = async () => {
     });
 
     socket.value.on("offer", (_socket_data: Record<string, any>) => {
-      createAnswer(_socket_data.payload, _socket_data.socket_id);
+      createAnswer(
+        _socket_data.payload,
+        _socket_data.socket_id,
+        _socket_data?.recreate
+      );
     });
 
     socket.value.on("user_leave", (_socket_data: Record<string, any>) => {
       delete peers[_socket_data.socket_id];
     });
+
+    socket.value.on("shakehand", () => {
+      notifyUsersOnToggle();
+    });
+
+    socket.value.on(
+      "notify_users_on_toggle",
+      (_socket_data: Record<string, any>) => {
+        if (_socket_data.key === "isOpenCam") {
+          const previous = [...open_cams.value];
+          const index = open_cams.value.findIndex(
+            (str) => str === _socket_data.socket_id
+          );
+          if (_socket_data.value) {
+            if (index === -1) open_cams.value.push(_socket_data.socket_id);
+          } else {
+            previous.splice(index, 1);
+            open_cams.value = previous;
+          }
+        } else {
+          const previous = [...open_mics.value];
+          const index = open_mics.value.findIndex(
+            (str) => str === _socket_data.socket_id
+          );
+          if (_socket_data.value) {
+            if (index !== 1) {
+              previous.splice(index, 1);
+              open_mics.value = previous;
+            }
+          } else {
+            if (index === -1) open_mics.value.push(_socket_data.socket_id);
+          }
+        }
+      }
+    );
   }
 };
 
-const createPeerConnection = async (socket_id: string) => {
+const createPeerConnection = async (socket_id: string, recreate?: boolean) => {
   peers[socket_id] = {
     peerConnection: new RTCPeerConnection(SERVERS),
     remoteStreamRef: new MediaStream(),
   };
 
-  if (!localStreamRef.value) {
-    localStreamRef.value = await navigator.mediaDevices.getUserMedia({
-      audio: tools.isMuted,
-      video: tools.isOpenCam
-        ? {
-            facingMode: "user",
-          }
-        : false,
-    });
+  if (!localStreamRef.value || recreate) {
+    await createNewLocalStreamRef();
   }
 
   localStreamRef.value!.getTracks().forEach((track: any) => {
@@ -419,8 +448,8 @@ const createPeerConnection = async (socket_id: string) => {
   };
 };
 
-const createOffer = async (socket_id: string) => {
-  await createPeerConnection(socket_id);
+const createOffer = async (socket_id: string, recreate?: boolean) => {
+  await createPeerConnection(socket_id, recreate);
   const localPeers = toRaw(peers);
 
   const peer = localPeers[socket_id];
@@ -432,10 +461,15 @@ const createOffer = async (socket_id: string) => {
     meeting_id: decodedSession.value!.meeting_id,
     payload: offer,
     socket_id,
+    recreate,
   });
 };
 
-const createAnswer = async (payload: any, socket_id: string) => {
+const createAnswer = async (
+  payload: any,
+  socket_id: string,
+  recreate?: boolean
+) => {
   await createPeerConnection(socket_id);
   const localPeers = toRaw(peers);
 
@@ -450,6 +484,7 @@ const createAnswer = async (payload: any, socket_id: string) => {
     meeting_id: decodedSession.value!.meeting_id,
     payload: answer,
     socket_id,
+    recreate,
   });
 };
 
@@ -460,34 +495,83 @@ const addAnswer = async (answer: any, socket_id: string) => {
 
   if (!peer!.peerConnection.currentRemoteDescription) {
     peer!.peerConnection.setRemoteDescription(answer);
+    notifyUsersOnToggle();
+    socket.value.emit("shakehand");
   }
+};
+
+const notifyUsersOnToggle = () => {
+  socket.value.emit("notify_users_on_toggle", {
+    key: tools.isMuted,
+    value: tools.isOpenCam,
+    meeting_id: decodedSession.value!.meeting_id,
+  });
+  socket.value.emit("notify_users_on_toggle", {
+    key: tools.isOpenCam,
+    value: tools.isOpenCam,
+    meeting_id: decodedSession.value!.meeting_id,
+  });
+};
+
+const createNewLocalStreamRef = async () => {
+  localStreamRef.value = await navigator.mediaDevices.getUserMedia({
+    audio: tools.isMuted,
+    video: tools.isOpenCam
+      ? {
+          facingMode: "user",
+        }
+      : false,
+  });
 };
 
 const toggleTools = async (key: string) => {
   (tools as any)[key] = !(tools as any)[key];
-  if (key == "isOpenCam") {
-    const videoTrack = localStreamRef.value
-      ?.getTracks()
-      .find((track) => track.kind === "video");
-    if (videoTrack !== undefined) {
-      videoTrack!.enabled = tools.isOpenCam;
-    } else {
-      localStreamRef.value = await navigator.mediaDevices.getUserMedia({
-        audio: tools.isMuted,
-        video: tools.isOpenCam
-          ? {
-              facingMode: "user",
-            }
-          : false,
+  nextTick(async () => {
+    if (key == "isOpenCam") {
+      const videoTrack = localStreamRef.value
+        ?.getTracks()
+        .find((track) => track.kind === "video");
+      if (videoTrack !== undefined) {
+        videoTrack!.enabled = tools.isOpenCam;
+      } else {
+        if (Object.keys(peers).length) {
+          Object.keys(peers).map((socket_id) => {
+            createOffer(socket_id, true);
+          });
+        } else {
+          createNewLocalStreamRef();
+        }
+      }
+      socket.value.emit("notify_users_on_toggle", {
+        key,
+        value: (tools as any)[key],
+        meeting_id: decodedSession.value!.meeting_id,
       });
+      localStorage.setItem("isOpenCam", JSON.stringify((tools as any)[key]));
     }
-  }
-  if (key == "isMuted") {
-    const audioTrack = localStreamRef.value
-      ?.getTracks()
-      .find((track) => track.kind === "audio");
-    audioTrack!.enabled = !tools.isMuted;
-  }
+    if (key == "isMuted") {
+      const audioTrack = localStreamRef.value
+        ?.getTracks()
+        .find((track) => track.kind === "audio");
+      if (audioTrack !== undefined) {
+        audioTrack!.enabled = tools.isMuted;
+      } else {
+        if (Object.keys(peers).length) {
+          Object.keys(peers).map((socket_id) => {
+            createOffer(socket_id, true);
+          });
+        } else {
+          createNewLocalStreamRef();
+        }
+      }
+      socket.value.emit("notify_users_on_toggle", {
+        key,
+        value: (tools as any)[key],
+        meeting_id: decodedSession.value!.meeting_id,
+      });
+      localStorage.setItem("isMuted", JSON.stringify((tools as any)[key]));
+    }
+  });
 };
 
 const back = () => {
@@ -551,19 +635,9 @@ onMounted(() => {
   width: 42%;
 }
 
-video {
-  -webkit-transform: scaleX(-1);
-  transform: scaleX(-1);
-}
-
 #video-container {
   height: calc(100vh - 305px);
   overflow-y: auto;
-}
-
-.video-player {
-  width: 100%;
-  height: 100%;
 }
 
 /* width */

@@ -160,7 +160,7 @@
     </div>
 
     <div
-      class="sm:order-2 order-3 flex flex-col sm:justify-between mt-10 sm:mt-0"
+      class="sm:order-2 order-3 flex flex-col sm:justify-between mt-10 sm:mt-0 w-80 md:w-96"
     >
       <div>
         <TextInput placeholder="EMAIL" class="w-full" />
