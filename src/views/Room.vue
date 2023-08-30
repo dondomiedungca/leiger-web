@@ -109,8 +109,10 @@
         <div class="flex-grow">
           <VideoComponent
             :srcObject="localStreamRef"
-            classes="rounded-lg h-1/2 mda:h-4/5 w-full bg-black aspect-video border-2 border-blue-500"
+            classes="rounded-lg h-1/2 mda:h-4/5 w-full bg-black aspect-video border-2 border-blue-500 relative"
             :overrideClass="true"
+            user_identifier="YOU"
+            :isOpenCam="tools.isOpenCam"
           />
           <div
             id="video-container-row"
@@ -124,6 +126,7 @@
               :showIcons="true"
               :isOpenCam="open_cams.includes(ui)"
               :isOpenMic="open_mics.includes(ui)"
+              :user_identifier="peer.user_identifier"
             />
           </div>
         </div>
@@ -239,6 +242,7 @@
               :showIcons="true"
               :isOpenCam="open_cams.includes(ui)"
               :isOpenMic="open_mics.includes(ui)"
+              :user_identifier="peer.user_identifier"
             />
           </div>
         </div>
@@ -286,8 +290,8 @@ const authStore = useAuthStore();
 const { auth } = storeToRefs(authStore);
 
 const tools = reactive({
-  isMuted: JSON.parse(localStorage.getItem("isMuted") || "false"),
-  isOpenCam: JSON.parse(localStorage.getItem("isOpenCam") || "false"),
+  isMuted: false,
+  isOpenCam: false,
 });
 const screen_width = ref<number>(10000);
 const open_mics = ref<string[]>([]);
@@ -300,6 +304,7 @@ const peers = reactive<
     {
       peerConnection: RTCPeerConnection;
       remoteStreamRef: MediaStream;
+      user_identifier: string;
     }
   >
 >({});
@@ -354,12 +359,13 @@ const roomAndConnectionInitializer = async () => {
     socket.value = io(`${BASE_URL}/meeting`, {
       query: {
         meeting_id: decodedSession.value!.meeting_id,
+        user_identifier: decodedSession.value!.user_identifier,
       },
       forceNew: true,
     });
 
     socket.value.on("join", (_socket_data: Record<string, any>) => {
-      createOffer(_socket_data.socket_id);
+      createOffer(_socket_data.socket_id, _socket_data.user_identifier);
     });
 
     socket.value.on("ice_candidate", onIce);
@@ -371,6 +377,7 @@ const roomAndConnectionInitializer = async () => {
     socket.value.on("offer", (_socket_data: Record<string, any>) => {
       createAnswer(
         _socket_data.payload,
+        _socket_data.user_identifier,
         _socket_data.socket_id,
         _socket_data?.recreate
       );
@@ -387,6 +394,7 @@ const roomAndConnectionInitializer = async () => {
     socket.value.on(
       "notify_users_on_toggle",
       (_socket_data: Record<string, any>) => {
+        console.log(_socket_data);
         if (_socket_data.key === "isOpenCam") {
           const previous = [...open_cams.value];
           const index = open_cams.value.findIndex(
@@ -404,7 +412,7 @@ const roomAndConnectionInitializer = async () => {
             (str) => str === _socket_data.socket_id
           );
           if (_socket_data.value) {
-            if (index !== 1) {
+            if (index !== -1) {
               previous.splice(index, 1);
               open_mics.value = previous;
             }
@@ -417,10 +425,15 @@ const roomAndConnectionInitializer = async () => {
   }
 };
 
-const createPeerConnection = async (socket_id: string, recreate?: boolean) => {
+const createPeerConnection = async (
+  socket_id: string,
+  user_identifier: string,
+  recreate?: boolean
+) => {
   peers[socket_id] = {
     peerConnection: new RTCPeerConnection(SERVERS),
     remoteStreamRef: new MediaStream(),
+    user_identifier,
   };
 
   if (!localStreamRef.value || recreate) {
@@ -442,14 +455,19 @@ const createPeerConnection = async (socket_id: string, recreate?: boolean) => {
       socket.value.emit("ice_candidate", {
         meeting_id: decodedSession.value!.meeting_id,
         payload: event.candidate,
+        user_identifier: decodedSession.value!.user_identifier,
         socket_id,
       });
     }
   };
 };
 
-const createOffer = async (socket_id: string, recreate?: boolean) => {
-  await createPeerConnection(socket_id, recreate);
+const createOffer = async (
+  socket_id: string,
+  user_identifier: string,
+  recreate?: boolean
+) => {
+  await createPeerConnection(socket_id, user_identifier, recreate);
   const localPeers = toRaw(peers);
 
   const peer = localPeers[socket_id];
@@ -460,6 +478,7 @@ const createOffer = async (socket_id: string, recreate?: boolean) => {
   socket.value.emit("offer", {
     meeting_id: decodedSession.value!.meeting_id,
     payload: offer,
+    user_identifier: decodedSession.value!.user_identifier,
     socket_id,
     recreate,
   });
@@ -467,10 +486,11 @@ const createOffer = async (socket_id: string, recreate?: boolean) => {
 
 const createAnswer = async (
   payload: any,
+  user_identifier: string,
   socket_id: string,
   recreate?: boolean
 ) => {
-  await createPeerConnection(socket_id);
+  await createPeerConnection(socket_id, user_identifier);
   const localPeers = toRaw(peers);
 
   const peer = localPeers[socket_id];
@@ -482,6 +502,7 @@ const createAnswer = async (
 
   socket.value.emit("answer", {
     meeting_id: decodedSession.value!.meeting_id,
+    user_identifier: decodedSession.value!.user_identifier,
     payload: answer,
     socket_id,
     recreate,
@@ -496,20 +517,24 @@ const addAnswer = async (answer: any, socket_id: string) => {
   if (!peer!.peerConnection.currentRemoteDescription) {
     peer!.peerConnection.setRemoteDescription(answer);
     notifyUsersOnToggle();
-    socket.value.emit("shakehand");
+    socket.value.emit("shakehand", {
+      meeting_id: decodedSession.value!.meeting_id,
+    });
   }
 };
 
 const notifyUsersOnToggle = () => {
   socket.value.emit("notify_users_on_toggle", {
-    key: tools.isMuted,
-    value: tools.isOpenCam,
+    key: "isMuted",
+    value: tools.isMuted,
     meeting_id: decodedSession.value!.meeting_id,
+    user_identifier: decodedSession.value!.user_identifier,
   });
   socket.value.emit("notify_users_on_toggle", {
-    key: tools.isOpenCam,
+    key: "isOpenCam",
     value: tools.isOpenCam,
     meeting_id: decodedSession.value!.meeting_id,
+    user_identifier: decodedSession.value!.user_identifier,
   });
 };
 
@@ -533,21 +558,25 @@ const toggleTools = async (key: string) => {
         .find((track) => track.kind === "video");
       if (videoTrack !== undefined) {
         videoTrack!.enabled = tools.isOpenCam;
+        socket.value.emit("notify_users_on_toggle", {
+          key,
+          value: (tools as any)[key],
+          meeting_id: decodedSession.value!.meeting_id,
+          user_identifier: decodedSession.value!.user_identifier,
+        });
       } else {
         if (Object.keys(peers).length) {
           Object.keys(peers).map((socket_id) => {
-            createOffer(socket_id, true);
+            createOffer(socket_id, peers[socket_id].user_identifier, true);
           });
         } else {
           createNewLocalStreamRef();
         }
       }
-      socket.value.emit("notify_users_on_toggle", {
-        key,
-        value: (tools as any)[key],
-        meeting_id: decodedSession.value!.meeting_id,
-      });
-      localStorage.setItem("isOpenCam", JSON.stringify((tools as any)[key]));
+      localStorage.setItem(
+        `${decodedSession.value!.meeting_id}_isOpenCam`,
+        JSON.stringify((tools as any)[key])
+      );
     }
     if (key == "isMuted") {
       const audioTrack = localStreamRef.value
@@ -555,21 +584,21 @@ const toggleTools = async (key: string) => {
         .find((track) => track.kind === "audio");
       if (audioTrack !== undefined) {
         audioTrack!.enabled = tools.isMuted;
+        socket.value.emit("notify_users_on_toggle", {
+          key,
+          value: (tools as any)[key],
+          meeting_id: decodedSession.value!.meeting_id,
+          user_identifier: decodedSession.value!.user_identifier,
+        });
       } else {
         if (Object.keys(peers).length) {
           Object.keys(peers).map((socket_id) => {
-            createOffer(socket_id, true);
+            createOffer(socket_id, peers[socket_id].user_identifier, true);
           });
         } else {
           createNewLocalStreamRef();
         }
       }
-      socket.value.emit("notify_users_on_toggle", {
-        key,
-        value: (tools as any)[key],
-        meeting_id: decodedSession.value!.meeting_id,
-      });
-      localStorage.setItem("isMuted", JSON.stringify((tools as any)[key]));
     }
   });
 };
@@ -600,8 +629,14 @@ useFetchEffect(handleValidateSession, {
     } else {
       decodedSession.value = _data as Record<string, any>;
       initializing.value = false;
-      await initLocalMediaStream();
-      roomAndConnectionInitializer();
+      tools.isOpenCam = JSON.parse(
+        localStorage.getItem(`${decodedSession.value.meeting_id}_isOpenCam`) ||
+          "false"
+      );
+      nextTick(async () => {
+        await initLocalMediaStream();
+        roomAndConnectionInitializer();
+      });
     }
   },
 });

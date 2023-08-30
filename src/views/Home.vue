@@ -258,6 +258,7 @@
               placeholder="Create your meeting password"
               class="w-full"
               v-model="createPassword"
+              @onPressEnter="createMeeting"
             />
           </div>
           <div v-if="!!handleCreateMeeting.error.value">

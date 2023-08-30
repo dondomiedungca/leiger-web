@@ -31,6 +31,18 @@
         />
       </div>
     </div>
+    <div
+      v-if="!isOpenCam && user_identifier"
+      class="absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+    >
+      <p
+        :class="`text-white font-semibold font-oxygen px-3 py-2 rounded-lg ${
+          user_identifier === 'YOU' ? 'bg-blue-400' : 'bg-gray-700'
+        }`"
+      >
+        {{ user_identifier }}
+      </p>
+    </div>
     <video
       class="video-player aspect-video bg-black"
       :srcObject="props.srcObject"
@@ -50,6 +62,7 @@ const props = defineProps<{
   showIcons?: boolean;
   isOpenCam?: boolean;
   isOpenMic?: boolean;
+  user_identifier?: string;
 }>();
 </script>
 
