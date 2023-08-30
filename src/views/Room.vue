@@ -394,7 +394,6 @@ const roomAndConnectionInitializer = async () => {
     socket.value.on(
       "notify_users_on_toggle",
       (_socket_data: Record<string, any>) => {
-        console.log(_socket_data);
         if (_socket_data.key === "isOpenCam") {
           const previous = [...open_cams.value];
           const index = open_cams.value.findIndex(
