@@ -185,11 +185,18 @@
             </div>
             <div class="text-center">
               <div
-                class="py-1 px-3 group duration-300 hover:bg-blue-50 hover:border-blue-50 rounded-md cursor-pointer mb-1 border-2 border-gray-100 relative h-10 w-10"
+                @click="shareScreen"
+                :class="`py-1 px-3 group duration-300 ${
+                  !tools.isScreenSharing ? '' : 'bg-blue-100 border-blue-100'
+                } hover:bg-blue-50 hover:border-blue-50 rounded-md cursor-pointer mb-1 border-2 border-gray-100 relative h-10 w-10`"
               >
                 <fa
-                  class="text-slate-400 duration-300 group-hover:text-blue-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-                  icon="fa-solid fa-display"
+                  :class="`${
+                    !tools.isScreenSharing ? 'text-slate-400' : 'text-blue-500'
+                  } duration-300 group-hover:text-blue-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2`"
+                  :icon="`fa-solid ${
+                    tools.isScreenSharing ? 'fa-users-viewfinder' : 'fa-display'
+                  }`"
                 />
               </div>
               <p class="text-xs font-oxygen text-gray-400 select-none">
@@ -292,12 +299,14 @@ const { auth } = storeToRefs(authStore);
 const tools = reactive({
   isMuted: false,
   isOpenCam: false,
+  isScreenSharing: false,
 });
 const screen_width = ref<number>(10000);
 const open_mics = ref<string[]>([]);
 const open_cams = ref<string[]>([]);
 
 const localStreamRef = ref<MediaStream | undefined>();
+const backupLocalStreamRef = ref<MediaStream | undefined>();
 const peers = reactive<
   Record<
     string,
@@ -427,7 +436,8 @@ const roomAndConnectionInitializer = async () => {
 const createPeerConnection = async (
   socket_id: string,
   user_identifier: string,
-  recreate?: boolean
+  recreate?: boolean,
+  media_type?: "default" | "screen_sharing"
 ) => {
   peers[socket_id] = {
     peerConnection: new RTCPeerConnection(SERVERS),
@@ -436,7 +446,7 @@ const createPeerConnection = async (
   };
 
   if (!localStreamRef.value || recreate) {
-    await createNewLocalStreamRef();
+    await createNewLocalStreamRef(media_type);
   }
 
   localStreamRef.value!.getTracks().forEach((track: any) => {
@@ -464,9 +474,10 @@ const createPeerConnection = async (
 const createOffer = async (
   socket_id: string,
   user_identifier: string,
-  recreate?: boolean
+  recreate?: boolean,
+  media_type?: "default" | "screen_sharing"
 ) => {
-  await createPeerConnection(socket_id, user_identifier, recreate);
+  await createPeerConnection(socket_id, user_identifier, recreate, media_type);
   const localPeers = toRaw(peers);
 
   const peer = localPeers[socket_id];
@@ -537,18 +548,70 @@ const notifyUsersOnToggle = () => {
   });
 };
 
-const createNewLocalStreamRef = async () => {
-  localStreamRef.value = await navigator.mediaDevices.getUserMedia({
-    audio: tools.isMuted,
-    video: tools.isOpenCam
-      ? {
+const createNewLocalStreamRef = async (media_type = "default") => {
+  const newStream =
+    media_type === "default"
+      ? await navigator.mediaDevices.getUserMedia({
+          audio: !tools.isMuted,
+          video: tools.isOpenCam
+            ? {
+                facingMode: "user",
+              }
+            : false,
+        })
+      : await navigator.mediaDevices.getDisplayMedia({
+          audio: !tools.isMuted,
+          video: true,
+          cursor: true,
+        } as Record<string, any>);
+
+  backupLocalStreamRef.value = localStreamRef.value;
+  localStreamRef.value = newStream;
+
+  if (media_type === "screen_sharing") {
+    const screenTrack = localStreamRef.value
+      .getTracks()
+      .find((tr) => tr.kind === "video");
+
+    if (
+      !backupLocalStreamRef.value?.getTracks().find((tr) => tr.kind === "video")
+    ) {
+      backupLocalStreamRef.value = await navigator.mediaDevices.getUserMedia({
+        audio: !tools.isMuted,
+        video: {
           facingMode: "user",
-        }
-      : false,
+        },
+      });
+      backupLocalStreamRef.value.getVideoTracks()[0].enabled = false;
+    }
+
+    if (!!screenTrack) {
+      screenTrack.onended = async function () {
+        tools.isScreenSharing = false;
+        localStreamRef.value = backupLocalStreamRef.value;
+        useBackupLocalStream();
+      };
+    }
+  }
+};
+
+const useBackupLocalStream = () => {
+  Object.keys(peers).map((socket_id) => {
+    peers[socket_id].peerConnection.getSenders().forEach((sender) => {
+      const track = backupLocalStreamRef.value
+        ?.getTracks()
+        ?.find((tr) => tr.kind === sender.track?.kind);
+      if (!!track) {
+        sender.replaceTrack(track);
+      }
+    });
   });
 };
 
 const toggleTools = async (key: string) => {
+  if (key == "isOpenCam" && tools.isScreenSharing) {
+    return;
+  }
   (tools as any)[key] = !(tools as any)[key];
   nextTick(async () => {
     if (key == "isOpenCam") {
@@ -589,15 +652,67 @@ const toggleTools = async (key: string) => {
           meeting_id: decodedSession.value!.meeting_id,
           user_identifier: decodedSession.value!.user_identifier,
         });
-      } else {
-        if (Object.keys(peers).length) {
-          Object.keys(peers).map((socket_id) => {
-            createOffer(socket_id, peers[socket_id].user_identifier, true);
-          });
+      }
+    }
+  });
+};
+
+const shareScreen = () => {
+  tools.isScreenSharing = !tools.isScreenSharing;
+  nextTick(() => {
+    if (tools.isScreenSharing) {
+      const videoTrack = localStreamRef.value
+        ?.getTracks()
+        .find((track) => track.kind === "video");
+
+      if (Object.keys(peers).length) {
+        if (videoTrack !== undefined) {
+          navigator.mediaDevices
+            .getDisplayMedia({
+              audio: !tools.isMuted,
+              video: true,
+              cursor: true,
+            } as Record<string, any>)
+            .then(async (stream) => {
+              const screenTrack = stream
+                .getTracks()
+                .find((tr) => tr.kind === "video");
+              backupLocalStreamRef.value = localStreamRef.value;
+              localStreamRef.value = stream;
+              if (screenTrack) {
+                Object.keys(peers).map((socket_id) => {
+                  peers[socket_id].peerConnection
+                    .getSenders()
+                    .forEach((sender) => {
+                      if (sender.track?.kind === "video") {
+                        sender.replaceTrack(screenTrack);
+                      }
+                    });
+                });
+                screenTrack.onended = async function () {
+                  tools.isScreenSharing = false;
+                  localStreamRef.value = backupLocalStreamRef.value;
+                  useBackupLocalStream();
+                };
+              }
+            });
         } else {
-          createNewLocalStreamRef();
+          if (Object.keys(peers).length) {
+            Object.keys(peers).map((socket_id) => {
+              createOffer(
+                socket_id,
+                peers[socket_id].user_identifier,
+                true,
+                "screen_sharing"
+              );
+            });
+          }
         }
       }
+    } else {
+      localStreamRef.value?.getTracks().forEach((tr) => tr?.stop());
+      localStreamRef.value = backupLocalStreamRef.value;
+      useBackupLocalStream();
     }
   });
 };
@@ -621,6 +736,7 @@ const copyClipboard = async () => {
   }
 };
 
+// Catching the changes from backend if the session is valid
 useFetchEffect(handleValidateSession, {
   onData: async (_data) => {
     if (_data == false) {
@@ -640,6 +756,7 @@ useFetchEffect(handleValidateSession, {
   },
 });
 
+// This is the initial load
 onMounted(() => {
   validateSession();
 });
