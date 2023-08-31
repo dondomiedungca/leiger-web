@@ -1,4 +1,21 @@
 <template lang="">
+  <div
+    v-if="sessionError"
+    class="fixed w-screen h-screen bg-gray-800 z-40 top-0 left-0"
+  >
+    <div
+      class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white min-h-max w-auto z-50 rounded-md flex flex-row gap-3 items-center px-4 py-2"
+    >
+      <fa
+        class="text-red-500 text-xl"
+        icon="fa-solid fa-triangle-exclamation"
+      />
+      <p class="font-oxygen text-red-400 font-thin">
+        <span class="font-bold">ERROR: </span>Your MEETING ID is not valid or
+        expired
+      </p>
+    </div>
+  </div>
   <main class="flex flex-row h-screen w-full overflow-hidden">
     <!-- quick tools -->
     <section
@@ -108,26 +125,58 @@
       <div class="w-full flex flex-col h-full gap-2 relative">
         <div class="flex-grow">
           <VideoComponent
-            :srcObject="localStreamRef"
+            :srcObject="
+              !someonesharing.length
+                ? localStreamRef
+                : peers[someonesharing[0]].remoteStreamRef
+            "
             classes="rounded-lg h-1/2 mda:h-4/5 w-full bg-black aspect-video border-2 border-blue-500 relative"
             :overrideClass="true"
-            user_identifier="YOU"
-            :isOpenCam="tools.isOpenCam"
+            :user_identifier="
+              !someonesharing.length
+                ? 'YOU'
+                : peers[someonesharing[0]].user_identifier
+            "
+            :isOpenCam="
+              !someonesharing.length
+                ? tools.isScreenSharing
+                  ? true
+                  : tools.isOpenCam
+                : true
+            "
           />
           <div
+            v-if="Object.keys(peers).length"
             id="video-container-row"
             class="mda:hidden flex flex-row gap-3 items-center mt-6 h-1/4 overflow-x-auto overflow-y-hidden pb-2"
           >
             <VideoComponent
-              v-for="(peer, ui) in peers"
-              :key="ui"
-              :id="ui"
-              :srcObject="peer.remoteStreamRef"
+              v-if="someonesharing.length"
+              :srcObject="localStreamRef"
               :showIcons="true"
-              :isOpenCam="open_cams.includes(ui)"
-              :isOpenMic="open_mics.includes(ui)"
-              :user_identifier="peer.user_identifier"
+              :isOpenCam="tools.isOpenCam"
+              :isOpenMic="!tools.isMuted"
+              :user_identifier="'YOU'"
             />
+            <template v-for="(peer, sid) in peers">
+              <VideoComponent
+                v-if="!someonesharing.includes(sid)"
+                :key="sid"
+                :id="sid"
+                :srcObject="peer.remoteStreamRef"
+                :showIcons="true"
+                :isOpenCam="open_cams.includes(sid)"
+                :isOpenMic="open_mics.includes(sid)"
+                :user_identifier="peer.user_identifier"
+              />
+            </template>
+          </div>
+          <div
+            v-else
+            class="mda:hidden flex flex-col gap-2 items-center justify-center h-1/4 mt-6"
+          >
+            <img :src="EmptyImage" alt="" class="w-32" />
+            <p>You are the only participant</p>
           </div>
         </div>
         <div
@@ -207,6 +256,8 @@
           <div>
             <div class="text-center">
               <div
+                data-modal-target="leave-meeting"
+                data-modal-toggle="leave-meeting"
                 class="py-1 px-3 group duration-300 hover:bg-red-50 hover:border-red-50 rounded-md cursor-pointer mb-1 border-2 border-red-100"
               >
                 <fa
@@ -242,15 +293,25 @@
             class="w-full bg-black mt-2 flex flex-row flex-wrap gap-5 content-start justify-center p-5"
           >
             <VideoComponent
-              v-for="(peer, ui) in peers"
-              :key="ui"
-              :id="ui"
-              :srcObject="peer.remoteStreamRef"
+              v-if="someonesharing.length"
+              :srcObject="localStreamRef"
               :showIcons="true"
-              :isOpenCam="open_cams.includes(ui)"
-              :isOpenMic="open_mics.includes(ui)"
-              :user_identifier="peer.user_identifier"
+              :isOpenCam="tools.isOpenCam"
+              :isOpenMic="!tools.isMuted"
+              :user_identifier="'YOU'"
             />
+            <template v-for="(peer, sid) in peers">
+              <VideoComponent
+                v-if="!someonesharing.includes(sid)"
+                :key="sid"
+                :id="sid"
+                :srcObject="peer.remoteStreamRef"
+                :showIcons="true"
+                :isOpenCam="open_cams.includes(sid)"
+                :isOpenMic="open_mics.includes(sid)"
+                :user_identifier="peer.user_identifier"
+              />
+            </template>
           </div>
         </div>
 
@@ -275,10 +336,79 @@
       </div>
     </section>
   </main>
+  <div
+    id="leave-meeting"
+    tabindex="-1"
+    aria-hidden="true"
+    class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full"
+  >
+    <div class="relative w-full max-w-sm max-h-full">
+      <!-- Modal content -->
+      <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+        <!-- Modal header -->
+        <div
+          class="flex items-start justify-between p-6 border-b rounded-t dark:border-gray-600"
+        >
+          <h3 class="text-md font-semibold text-gray-500 dark:text-white">
+            LEAVE CURRENT MEETING?
+          </h3>
+          <button
+            type="button"
+            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+            data-modal-hide="leave-meeting"
+          >
+            <svg
+              class="w-3 h-3"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 14 14"
+            >
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+              />
+            </svg>
+            <span class="sr-only">Close modal</span>
+          </button>
+        </div>
+        <!-- Modal body -->
+        <div class="p-6 space-y-6">
+          <p class="font-oxygen font-normal text-sm text-gray-700">
+            Leaving this meeting will delete your session and you need to join
+            via MEETING ID and password. Do you really want to proceed?
+          </p>
+        </div>
+        <!-- Modal footer -->
+        <div
+          class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600"
+        >
+          <button
+            @click="leaveMeeting"
+            type="button"
+            class="text-white bg-red-500 hover:bg-red-500 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-sm text-xs px-2 py-1.5 text-center dark:bg-red-600 dark:hover:bg-red-500 dark:focus:ring-red-500"
+          >
+            Yes
+          </button>
+          <button
+            data-modal-hide="leave-meeting"
+            type="button"
+            class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-sm border border-gray-200 text-xs font-medium px-2 py-1.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import Logo from "@/assets/images/logo-no-background.png";
+import EmptyImage from "@/assets/images/empty.png";
 import { nextTick, onMounted, reactive, ref, toRaw } from "vue";
 import { storeToRefs } from "pinia";
 import { useCookies } from "../libs/useCookies";
@@ -287,10 +417,11 @@ import { useFetchEffect } from "../libs/useFetchEffect";
 import { useRouter } from "vue-router";
 import { io } from "socket.io-client";
 import { useAuthStore } from "../stores/useAuth.store";
+import { initFlowbite } from "flowbite";
 import TextInput from "../components/TextInput.vue";
 import VideoComponent from "../components/VideoComponent.vue";
 
-const { getCookie } = useCookies();
+const { getCookie, deleteCookie } = useCookies();
 const { fetch, ...handleValidateSession } = useValidateSession();
 const router = useRouter();
 const authStore = useAuthStore();
@@ -304,6 +435,7 @@ const tools = reactive({
 const screen_width = ref<number>(10000);
 const open_mics = ref<string[]>([]);
 const open_cams = ref<string[]>([]);
+const someonesharing = ref<string[]>([]);
 
 const localStreamRef = ref<MediaStream | undefined>();
 const backupLocalStreamRef = ref<MediaStream | undefined>();
@@ -339,7 +471,11 @@ const validateSession = async () => {
     return;
   }
   const meeting_sid = router.currentRoute.value.query.meeting_sid as string;
-  await fetch({ session, meeting_sid });
+  await fetch({
+    session,
+    meeting_sid,
+    joiner_id: auth.value.is_authenticated ? auth.value.user?.id : undefined,
+  });
 };
 
 const initLocalMediaStream = async () => {
@@ -390,6 +526,13 @@ const roomAndConnectionInitializer = async () => {
         _socket_data.socket_id,
         _socket_data?.recreate
       );
+
+      if (tools.isScreenSharing) {
+        socket.value.emit("update_video_canvas", {
+          isScreenSharing: tools.isScreenSharing,
+          meeting_id: decodedSession.value!.meeting_id,
+        });
+      }
     });
 
     socket.value.on("user_leave", (_socket_data: Record<string, any>) => {
@@ -399,6 +542,26 @@ const roomAndConnectionInitializer = async () => {
     socket.value.on("shakehand", () => {
       notifyUsersOnToggle();
     });
+
+    socket.value.on(
+      "update_video_canvas",
+      (_socket_data: Record<string, any>) => {
+        const previous = [...someonesharing.value];
+        const index = previous.findIndex(
+          (ss) => ss === _socket_data?.socket_id
+        );
+        if (_socket_data.isScreenSharing) {
+          if (index === -1) {
+            someonesharing.value.push(_socket_data.socket_id);
+          }
+        } else {
+          if (index !== -1) {
+            previous.splice(index, 1);
+            someonesharing.value = previous;
+          }
+        }
+      }
+    );
 
     socket.value.on(
       "notify_users_on_toggle",
@@ -590,7 +753,15 @@ const createNewLocalStreamRef = async (media_type = "default") => {
         tools.isScreenSharing = false;
         localStreamRef.value = backupLocalStreamRef.value;
         useBackupLocalStream();
+        socket.value.emit("update_video_canvas", {
+          isScreenSharing: false,
+          meeting_id: decodedSession.value!.meeting_id,
+        });
       };
+      socket.value.emit("update_video_canvas", {
+        isScreenSharing: tools.isScreenSharing,
+        meeting_id: decodedSession.value!.meeting_id,
+      });
     }
   }
 };
@@ -693,7 +864,15 @@ const shareScreen = () => {
                   tools.isScreenSharing = false;
                   localStreamRef.value = backupLocalStreamRef.value;
                   useBackupLocalStream();
+                  socket.value.emit("update_video_canvas", {
+                    isScreenSharing: false,
+                    meeting_id: decodedSession.value!.meeting_id,
+                  });
                 };
+                socket.value.emit("update_video_canvas", {
+                  isScreenSharing: tools.isScreenSharing,
+                  meeting_id: decodedSession.value!.meeting_id,
+                });
               }
             });
         } else {
@@ -723,6 +902,11 @@ const back = () => {
 
 var onresize = function () {
   screen_width.value = document.body.clientWidth;
+};
+
+const leaveMeeting = () => {
+  deleteCookie("MEETING_SESSION");
+  window.location.href = "/";
 };
 
 window.addEventListener("resize", onresize);
@@ -758,6 +942,7 @@ useFetchEffect(handleValidateSession, {
 
 // This is the initial load
 onMounted(() => {
+  initFlowbite();
   validateSession();
 });
 </script>

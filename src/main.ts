@@ -22,6 +22,7 @@ import {
   faPaperPlane,
   faCopy,
   faUsersViewfinder,
+  faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -42,7 +43,8 @@ library.add(
   faMessage,
   faPaperPlane,
   faCopy,
-  faUsersViewfinder
+  faUsersViewfinder,
+  faTriangleExclamation
 );
 
 app.use(router);

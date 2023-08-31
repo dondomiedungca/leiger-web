@@ -55,7 +55,11 @@ export const useValidateSession = () => {
     false
   );
 
-  const makeRequest = (data: { session: string; meeting_sid: string }) => {
+  const makeRequest = (data: {
+    session: string;
+    meeting_sid: string;
+    joiner_id?: string;
+  }) => {
     return fetch?.(data);
   };
 
