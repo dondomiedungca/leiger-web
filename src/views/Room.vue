@@ -16,326 +16,6 @@
       </p>
     </div>
   </div>
-  <main class="flex flex-row h-screen w-full overflow-hidden">
-    <!-- quick tools -->
-    <section
-      class="section-1 bg-gray-50 flex flex-col items-center py-10 px-2 justify-between"
-    >
-      <img @click="back" :src="Logo" class="w-full cursor-pointer" alt="" />
-
-      <div class="flex flex-col items-center gap-5">
-        <div
-          class="rounded-md py-2 px-2 duration-300 hover:bg-blue-200 cursor-pointer group"
-        >
-          <fa
-            class="text-slate-400 duration-300 group-hover:text-blue-400"
-            icon="fa-solid fa-house"
-          />
-        </div>
-        <div
-          class="rounded-md py-2 px-2 duration-300 hover:bg-blue-200 cursor-pointer group"
-        >
-          <fa
-            class="text-slate-400 duration-300 group-hover:text-blue-400"
-            icon="fa-solid fa-video"
-          />
-        </div>
-        <div
-          class="rounded-md py-2 px-2 duration-300 hover:bg-blue-200 cursor-pointer group"
-        >
-          <fa
-            class="text-slate-400 duration-300 group-hover:text-blue-400"
-            icon="fa-solid fa-bell"
-          />
-        </div>
-        <div
-          class="rounded-md py-2 px-2 duration-300 hover:bg-blue-100 cursor-pointer group"
-        >
-          <fa
-            class="text-slate-400 duration-300 group-hover:text-blue-400"
-            icon="fa-solid fa-message"
-          />
-        </div>
-        <div
-          class="rounded-md py-2 px-2 duration-300 hover:bg-blue-200 cursor-pointer group"
-        >
-          <fa
-            class="text-slate-400 duration-300 group-hover:text-blue-400"
-            icon="fa-solid fa-users"
-          />
-        </div>
-        <div
-          class="rounded-md py-2 px-2 duration-300 hover:bg-blue-200 cursor-pointer group"
-        >
-          <fa
-            class="text-slate-400 duration-300 group-hover:text-blue-400"
-            icon="fa-solid fa-gears"
-          />
-        </div>
-      </div>
-
-      <img
-        v-if="auth.is_authenticated"
-        class="w-8 rounded-lg cursor-pointer"
-        :src="auth.user?.user_meta.profile_photo"
-      />
-    </section>
-
-    <!-- main call container -->
-    <section class="section-2 bg-white px-5 py-5 flex flex-col">
-      <div
-        class="h-12 mda:h-20 w-full flex flex-row items-center gap-2 mda:gap-5 border-2 border-white border-b-gray-200"
-      >
-        <button
-          @click="back"
-          class="px-3 py-1 mda:px-5 mda:py-3 rounded-lg group duration-300 bg-blue-50 hover:bg-blue-100"
-        >
-          <fa
-            class="text-slate-400 duration-300 group-hover:text-blue-400"
-            icon="fa-solid fa-chevron-left"
-          />
-        </button>
-        <p class="font-oxygen text:xs font-semibold text-gray-300">
-          MEETING ID -
-          <span id="meeting_id" class="font-semibold text-gray-500">{{
-            decodedSession?.meeting_id
-          }}</span>
-        </p>
-        <button class="group" @click="copyClipboard">
-          <fa
-            class="text-slate-400 duration-300 group-hover:text-blue-400"
-            icon="fa-solid fa-copy"
-          />
-        </button>
-      </div>
-      <div
-        class="h-8 mda:h-10 w-full flex flex-row-reverse items-center gap-1 mda:gap-3 my-1 mda:my-2"
-      >
-        <p
-          class="font-bold text-blue-400 font-oxygen text:xs mda:text-sm cursor-pointer p-0"
-        >
-          INVITE PEOPLE
-        </p>
-        <fa
-          class="text-blue-500 cursor-pointer"
-          icon="fa-solid fa-square-plus"
-          :size="`${screen_width >= 896 ? '2x' : '1x'}`"
-        />
-      </div>
-      <div class="w-full flex flex-col h-full gap-2 relative">
-        <div class="flex-grow">
-          <VideoComponent
-            :srcObject="
-              !someonesharing.length
-                ? localStreamRef
-                : peers[someonesharing[0]].remoteStreamRef
-            "
-            classes="rounded-lg h-1/2 mda:h-4/5 w-full bg-black aspect-video border-2 border-blue-500 relative"
-            :overrideClass="true"
-            :user_identifier="
-              !someonesharing.length
-                ? 'YOU'
-                : peers[someonesharing[0]].user_identifier
-            "
-            :isOpenCam="
-              !someonesharing.length
-                ? tools.isScreenSharing
-                  ? true
-                  : tools.isOpenCam
-                : true
-            "
-          />
-          <div
-            v-if="Object.keys(peers).length"
-            id="video-container-row"
-            class="mda:hidden flex flex-row gap-3 items-center mt-6 h-1/4 overflow-x-auto overflow-y-hidden pb-2"
-          >
-            <VideoComponent
-              v-if="someonesharing.length"
-              :srcObject="localStreamRef"
-              :showIcons="true"
-              :isOpenCam="tools.isOpenCam"
-              :isOpenMic="!tools.isMuted"
-              :user_identifier="'YOU'"
-            />
-            <template v-for="(peer, sid) in peers">
-              <VideoComponent
-                v-if="!someonesharing.includes(sid)"
-                :key="sid"
-                :id="sid"
-                :srcObject="peer.remoteStreamRef"
-                :showIcons="true"
-                :isOpenCam="open_cams.includes(sid)"
-                :isOpenMic="open_mics.includes(sid)"
-                :user_identifier="peer.user_identifier"
-              />
-            </template>
-          </div>
-          <div
-            v-else
-            class="mda:hidden flex flex-col gap-2 items-center justify-center h-1/4 mt-6"
-          >
-            <img :src="EmptyImage" alt="" class="w-32" />
-            <p>You are the only participant</p>
-          </div>
-        </div>
-        <div
-          class="absolute bottom-0 flex flex-row justify-between items-center h-1/5 w-full border-white border-t-gray-200 border-2"
-        >
-          <div class="flex flex-row gap-3">
-            <div class="text-center">
-              <div
-                @click="() => toggleTools('isMuted')"
-                :class="`py-1 px-3 group duration-300 ${
-                  tools.isMuted ? '' : 'bg-blue-100 border-blue-100'
-                } hover:bg-blue-50 hover:border-blue-50 rounded-md cursor-pointer mb-1 border-2 border-gray-100 relative h-10 w-10`"
-              >
-                <fa
-                  :class="`${
-                    tools.isMuted ? 'text-slate-400' : 'text-blue-500'
-                  } duration-300 group-hover:text-blue-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2`"
-                  :icon="`fa-solid ${
-                    tools.isMuted ? 'fa-microphone-slash' : 'fa-microphone'
-                  }`"
-                />
-              </div>
-              <p class="text-xs font-oxygen text-gray-400 select-none">Mic</p>
-            </div>
-            <div class="text-center">
-              <div
-                @click="() => toggleTools('isOpenCam')"
-                :class="`py-1 px-3 group duration-300 ${
-                  !tools.isOpenCam ? '' : 'bg-blue-100 border-blue-100'
-                } hover:bg-blue-50 hover:border-blue-50 rounded-md cursor-pointer mb-1 border-2 border-gray-100 relative h-10 w-10`"
-              >
-                <fa
-                  :class="`${
-                    !tools.isOpenCam ? 'text-slate-400' : 'text-blue-500'
-                  }  duration-300 group-hover:text-blue-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2`"
-                  :icon="`fa-solid ${
-                    tools.isOpenCam ? 'fa-video' : 'fa-video-slash'
-                  }`"
-                />
-              </div>
-              <p class="text-xs font-oxygen text-gray-400 select-none">Cam</p>
-            </div>
-            <div class="text-center">
-              <div
-                class="py-1 px-3 group duration-300 hover:bg-blue-50 hover:border-blue-50 rounded-md cursor-pointer mb-1 border-2 border-gray-100 relative h-10 w-10"
-              >
-                <fa
-                  class="text-slate-400 duration-300 group-hover:text-blue-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-                  icon="fa-solid fa-grip"
-                />
-              </div>
-              <p class="text-xs font-oxygen text-gray-400 select-none">
-                Display
-              </p>
-            </div>
-            <div class="text-center">
-              <div
-                @click="shareScreen"
-                :class="`py-1 px-3 group duration-300 ${
-                  !tools.isScreenSharing ? '' : 'bg-blue-100 border-blue-100'
-                } hover:bg-blue-50 hover:border-blue-50 rounded-md cursor-pointer mb-1 border-2 border-gray-100 relative h-10 w-10`"
-              >
-                <fa
-                  :class="`${
-                    !tools.isScreenSharing ? 'text-slate-400' : 'text-blue-500'
-                  } duration-300 group-hover:text-blue-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2`"
-                  :icon="`fa-solid ${
-                    tools.isScreenSharing ? 'fa-users-viewfinder' : 'fa-display'
-                  }`"
-                />
-              </div>
-              <p class="text-xs font-oxygen text-gray-400 select-none">
-                Screen
-              </p>
-            </div>
-          </div>
-          <div>
-            <div class="text-center">
-              <div
-                data-modal-target="leave-meeting"
-                data-modal-toggle="leave-meeting"
-                class="py-1 px-3 group duration-300 hover:bg-red-50 hover:border-red-50 rounded-md cursor-pointer mb-1 border-2 border-red-100"
-              >
-                <fa
-                  class="text-red-300 duration-300 group-hover:text-red-400"
-                  icon="fa-solid fa-right-from-bracket"
-                />
-              </div>
-              <p class="text-xs font-oxygen text-gray-400 select-none">Leave</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- sharing section -->
-    <section class="section-3 py-5 px-5 pl-0 hidden mda:block">
-      <div
-        id="sharing-container"
-        class="rounded-lg bg-gray-50 w-full h-full py-4 px-4 flex flex-col"
-      >
-        <div class="w-full flex-grow">
-          <div class="flex flex-row items-center gap-1 justify-center">
-            <fa
-              class="text-slate-400 duration-300 group-hover:text-blue-400"
-              icon="fa-solid fa-users"
-            />
-            <p class="font-oxygen text-xs text-gray-500 select-none">
-              Participant ({{ Object.keys(peers).length + 1 }})
-            </p>
-          </div>
-          <div
-            id="video-container"
-            class="w-full bg-black mt-2 flex flex-row flex-wrap gap-5 content-start justify-center p-5"
-          >
-            <VideoComponent
-              v-if="someonesharing.length"
-              :srcObject="localStreamRef"
-              :showIcons="true"
-              :isOpenCam="tools.isOpenCam"
-              :isOpenMic="!tools.isMuted"
-              :user_identifier="'YOU'"
-            />
-            <template v-for="(peer, sid) in peers">
-              <VideoComponent
-                v-if="!someonesharing.includes(sid)"
-                :key="sid"
-                :id="sid"
-                :srcObject="peer.remoteStreamRef"
-                :showIcons="true"
-                :isOpenCam="open_cams.includes(sid)"
-                :isOpenMic="open_mics.includes(sid)"
-                :user_identifier="peer.user_identifier"
-              />
-            </template>
-          </div>
-        </div>
-
-        <div class="w-full">
-          <div
-            class="w-full h-40 bg-white rounded-xl flex items-center justify-center border-2 border-gray-200 mb-2"
-          >
-            <small class="text-gray-500 text-xs font-oxygen">No Messages</small>
-          </div>
-          <div class="w-full h-8 flex flex-row">
-            <TextInput class="w-full" placeholder="Write a message">
-              <template v-slot:endIcon>
-                <button
-                  class="flex flex-row items-center gap-2 bg-blue-200 px-2 py-2 rounded-md"
-                >
-                  <fa class="text-blue-500" icon="fa-solid fa-paper-plane" />
-                </button>
-              </template>
-            </TextInput>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
   <div
     id="leave-meeting"
     tabindex="-1"
@@ -344,17 +24,17 @@
   >
     <div class="relative w-full max-w-sm max-h-full">
       <!-- Modal content -->
-      <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+      <div class="relative bg-gray-700 rounded-lg shadow dark:bg-gray-700">
         <!-- Modal header -->
         <div
           class="flex items-start justify-between p-6 border-b rounded-t dark:border-gray-600"
         >
-          <h3 class="text-md font-semibold text-gray-500 dark:text-white">
+          <h3 class="text-md font-semibold text-gray-300">
             LEAVE CURRENT MEETING?
           </h3>
           <button
             type="button"
-            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+            class="duration-300 text-gray-400 bg-gray-600 hover:bg-gray-500 hover:text-gray-900 rounded-sm text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
             data-modal-hide="leave-meeting"
           >
             <svg
@@ -377,9 +57,10 @@
         </div>
         <!-- Modal body -->
         <div class="p-6 space-y-6">
-          <p class="font-oxygen font-normal text-sm text-gray-700">
-            Leaving this meeting will delete your session and you need to join
-            via MEETING ID and password. Do you really want to proceed?
+          <p class="font-oxygen font-normal text-sm text-gray-200">
+            Leaving this meeting will delete your session and in order to join
+            again you need to join via MEETING ID and password at home section.
+            Do you really want to proceed?
           </p>
         </div>
         <!-- Modal footer -->
@@ -389,14 +70,14 @@
           <button
             @click="leaveMeeting"
             type="button"
-            class="text-white bg-red-500 hover:bg-red-500 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-sm text-xs px-2 py-1.5 text-center dark:bg-red-600 dark:hover:bg-red-500 dark:focus:ring-red-500"
+            class="text-white duration-300 bg-red-500 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-sm text-xs px-2 py-1.5 text-center"
           >
             Yes
           </button>
           <button
             data-modal-hide="leave-meeting"
             type="button"
-            class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-sm border border-gray-200 text-xs font-medium px-2 py-1.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+            class="text-gray-600 duration-300 bg-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-100 font-medium rounded-sm text-xs px-2 py-1.5 text-center"
           >
             No
           </button>
@@ -404,12 +85,132 @@
       </div>
     </div>
   </div>
+  <img :src="Logo" alt="" class="block sm:hidden fixed top-3 left-5 w-24" />
+  <main class="bg-gray-950 h-screen w-screen">
+    <section
+      id="main-container"
+      :class="`bg-gray-200 w-full flex ${containerFlexResult}`"
+    >
+      <!-- Sharing screen section -->
+      <div
+        v-if="someonesharing.length"
+        :class="`bg-gray-800 flex flex-row items-center justify-center w-full h-${
+          containerFlexResult === 'flex-row' ? 'full' : '1/2'
+        } p-5`"
+      >
+        <VideoComponent
+          :isForSharing="true"
+          :srcObject="peers[someonesharing[0]].remoteStreamRef"
+          :user_identifier="`${
+            peers[someonesharing[0]].user_identifier
+          } is sharing screen`"
+          :isOpenCam="true"
+          :isOpenMic="open_mics.includes(someonesharing[0])"
+        />
+      </div>
+      <!-- Initial screen including you -->
+      <div
+        :class="`bg-gray-800 w-full h-${
+          containerFlexResult === 'flex-row' ? 'full' : '1/2'
+        } flex flex-row content-${
+          someonesharing.length || Object.keys(peers).length
+            ? 'start'
+            : 'center'
+        } items-center justify-center flex-wrap gap-2 overflow-auto p-5`"
+      >
+        <VideoComponent
+          id="current"
+          :isActive="!someonesharing.length"
+          :srcObject="localStreamRef"
+          :isSomeoneSharing="!!someonesharing.length"
+          :isMini="isMini"
+          :isOpenCam="tools.isOpenCam"
+          :isOpenMic="!tools.isMuted"
+          :user_identifier="`YOU - ${decodedSession?.user_identifier}`"
+        />
+        <template v-for="(peer, sid) in peers">
+          <VideoComponent
+            :isActive="someonesharing[0] === sid"
+            :id="sid"
+            :srcObject="peer.remoteStreamRef"
+            :isSomeoneSharing="!!someonesharing.length"
+            :isMini="isMini"
+            :isOpenCam="open_cams.includes(sid)"
+            :isOpenMic="open_mics.includes(sid)"
+            :user_identifier="peer.user_identifier"
+          />
+        </template>
+      </div>
+    </section>
+    <section
+      id="tools"
+      class="bg-gray-900 w-11/12 sm:w-2/3 lg:w-2/5 h-12 sm:h-14 absolute bottom-2 left-1/2 -translate-x-1/2 rounded-md flex flex-row gap-3 p-1 items-center justify-center"
+    >
+      <img
+        :src="Logo"
+        class="hidden sm:block w-24 lg:w-20 absolute left-2"
+        alt=""
+      />
+      <button
+        @click="() => toggleTools('isOpenCam')"
+        class="bg-gray-800 p-2 rounded-md"
+      >
+        <img
+          :src="
+            tools.isScreenSharing
+              ? VideoBanImage
+              : tools.isOpenCam
+              ? VideoImage
+              : VideoDisableImage
+          "
+          alt=""
+          class="w-5 sm:w-6"
+        />
+      </button>
+      <button
+        @click="() => toggleTools('isMuted')"
+        class="bg-gray-800 p-2 rounded-md"
+      >
+        <img
+          :src="tools.isMuted ? MicrophoneDisableImage : MicrophoneImage"
+          alt=""
+          class="w-5 sm:w-6"
+        />
+      </button>
+      <button @click="() => shareScreen()" class="bg-gray-800 p-2 rounded-md">
+        <img
+          :src="tools.isScreenSharing ? DisplayImage : DisplayDisableImage"
+          alt=""
+          class="w-5 sm:w-6"
+        />
+      </button>
+      <button @click="() => {}" class="bg-gray-800 p-2 rounded-md">
+        <img :src="MoreImage" alt="" class="w-5 sm:w-6" />
+      </button>
+      <button
+        data-modal-target="leave-meeting"
+        data-modal-toggle="leave-meeting"
+        class="bg-red-600 p-2 rounded-md sm:absolute sm:right-2"
+      >
+        <img :src="LeaveImage" alt="" class="w-5 sm:w-6" />
+      </button>
+    </section>
+  </main>
 </template>
 
 <script lang="ts" setup>
 import Logo from "@/assets/images/logo-no-background.png";
 import EmptyImage from "@/assets/images/empty.png";
-import { nextTick, onMounted, reactive, ref, toRaw } from "vue";
+import MicrophoneImage from "@/assets/images/microphone.png";
+import MicrophoneDisableImage from "@/assets/images/microphone-disable.png";
+import VideoImage from "@/assets/images/video.png";
+import VideoDisableImage from "@/assets/images/video-disable.png";
+import VideoBanImage from "@/assets/images/video-ban.png";
+import DisplayImage from "@/assets/images/display.png";
+import DisplayDisableImage from "@/assets/images/display-disable.png";
+import MoreImage from "@/assets/images/more.png";
+import LeaveImage from "@/assets/images/leave.png";
+import { nextTick, onMounted, reactive, ref, toRaw, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useCookies } from "../libs/useCookies";
 import { useValidateSession } from "../libs/useMeeting";
@@ -432,7 +233,10 @@ const tools = reactive({
   isOpenCam: false,
   isScreenSharing: false,
 });
-const screen_width = ref<number>(10000);
+const screen_width = ref<number>(document.body.clientWidth);
+const screen_height = ref<number>(document.documentElement.scrollHeight);
+const isMini = ref<boolean>(false);
+
 const open_mics = ref<string[]>([]);
 const open_cams = ref<string[]>([]);
 const someonesharing = ref<string[]>([]);
@@ -463,6 +267,33 @@ const SERVERS = {
     },
   ],
 };
+
+const containerFlexResult = computed(() => {
+  isMini.value = false;
+  if (someonesharing.value.length) {
+    if (screen_height.value <= 650) {
+      isMini.value = true;
+      if (screen_width.value <= screen_height.value) {
+        return "flex-col";
+      } else {
+        return "flex-row";
+      }
+    } else {
+      if (screen_width.value <= 768) {
+        isMini.value = true;
+      }
+      return "flex-col";
+    }
+  } else {
+    if (
+      screen_width.value <= screen_height.value ||
+      screen_height.value <= 650
+    ) {
+      isMini.value = true;
+    }
+    return "flex-row";
+  }
+});
 
 const validateSession = async () => {
   const session = getCookie("MEETING_SESSION");
@@ -526,13 +357,6 @@ const roomAndConnectionInitializer = async () => {
         _socket_data.socket_id,
         _socket_data?.recreate
       );
-
-      if (tools.isScreenSharing) {
-        socket.value.emit("update_video_canvas", {
-          isScreenSharing: tools.isScreenSharing,
-          meeting_id: decodedSession.value!.meeting_id,
-        });
-      }
     });
 
     socket.value.on("user_leave", (_socket_data: Record<string, any>) => {
@@ -546,6 +370,7 @@ const roomAndConnectionInitializer = async () => {
     socket.value.on(
       "update_video_canvas",
       (_socket_data: Record<string, any>) => {
+        console.log(_socket_data);
         const previous = [...someonesharing.value];
         const index = previous.findIndex(
           (ss) => ss === _socket_data?.socket_id
@@ -693,6 +518,12 @@ const addAnswer = async (answer: any, socket_id: string) => {
     socket.value.emit("shakehand", {
       meeting_id: decodedSession.value!.meeting_id,
     });
+    if (tools.isScreenSharing) {
+      socket.value.emit("update_video_canvas", {
+        isScreenSharing: tools.isScreenSharing,
+        meeting_id: decodedSession.value!.meeting_id,
+      });
+    }
   }
 };
 
@@ -712,56 +543,68 @@ const notifyUsersOnToggle = () => {
 };
 
 const createNewLocalStreamRef = async (media_type = "default") => {
-  const newStream =
-    media_type === "default"
-      ? await navigator.mediaDevices.getUserMedia({
-          audio: !tools.isMuted,
-          video: tools.isOpenCam
-            ? {
+  try {
+    const newStream =
+      media_type === "default"
+        ? await navigator.mediaDevices.getUserMedia({
+            audio: !tools.isMuted,
+            video: tools.isOpenCam
+              ? {
+                  facingMode: "user",
+                }
+              : false,
+          })
+        : await navigator.mediaDevices.getDisplayMedia({
+            audio: !tools.isMuted,
+            video: true,
+            cursor: true,
+          } as Record<string, any>);
+
+    backupLocalStreamRef.value = localStreamRef.value;
+    localStreamRef.value = newStream;
+
+    if (media_type === "screen_sharing") {
+      tools.isScreenSharing = true;
+      nextTick(async () => {
+        const screenTrack = localStreamRef.value
+          ?.getTracks()
+          .find((tr) => tr.kind === "video");
+
+        if (
+          !backupLocalStreamRef.value
+            ?.getTracks()
+            .find((tr) => tr.kind === "video")
+        ) {
+          backupLocalStreamRef.value =
+            await navigator.mediaDevices.getUserMedia({
+              audio: !tools.isMuted,
+              video: {
                 facingMode: "user",
-              }
-            : false,
-        })
-      : await navigator.mediaDevices.getDisplayMedia({
-          audio: !tools.isMuted,
-          video: true,
-          cursor: true,
-        } as Record<string, any>);
+              },
+            });
+          backupLocalStreamRef.value.getVideoTracks()[0].enabled = false;
+        }
 
-  backupLocalStreamRef.value = localStreamRef.value;
-  localStreamRef.value = newStream;
-
-  if (media_type === "screen_sharing") {
-    const screenTrack = localStreamRef.value
-      .getTracks()
-      .find((tr) => tr.kind === "video");
-
-    if (
-      !backupLocalStreamRef.value?.getTracks().find((tr) => tr.kind === "video")
-    ) {
-      backupLocalStreamRef.value = await navigator.mediaDevices.getUserMedia({
-        audio: !tools.isMuted,
-        video: {
-          facingMode: "user",
-        },
+        if (!!screenTrack) {
+          screenTrack.onended = async function () {
+            tools.isScreenSharing = false;
+            localStreamRef.value = backupLocalStreamRef.value;
+            useBackupLocalStream();
+            socket.value.emit("update_video_canvas", {
+              isScreenSharing: false,
+              meeting_id: decodedSession.value!.meeting_id,
+            });
+          };
+          socket.value.emit("update_video_canvas", {
+            isScreenSharing: tools.isScreenSharing,
+            meeting_id: decodedSession.value!.meeting_id,
+          });
+        }
       });
-      backupLocalStreamRef.value.getVideoTracks()[0].enabled = false;
     }
-
-    if (!!screenTrack) {
-      screenTrack.onended = async function () {
-        tools.isScreenSharing = false;
-        localStreamRef.value = backupLocalStreamRef.value;
-        useBackupLocalStream();
-        socket.value.emit("update_video_canvas", {
-          isScreenSharing: false,
-          meeting_id: decodedSession.value!.meeting_id,
-        });
-      };
-      socket.value.emit("update_video_canvas", {
-        isScreenSharing: tools.isScreenSharing,
-        meeting_id: decodedSession.value!.meeting_id,
-      });
+  } catch (error) {
+    if ((error as any).name === "NotAllowedError") {
+      tools.isScreenSharing = false;
     }
   }
 };
@@ -816,7 +659,7 @@ const toggleTools = async (key: string) => {
         ?.getTracks()
         .find((track) => track.kind === "audio");
       if (audioTrack !== undefined) {
-        audioTrack!.enabled = tools.isMuted;
+        audioTrack!.enabled = !tools.isMuted;
         socket.value.emit("notify_users_on_toggle", {
           key,
           value: (tools as any)[key],
@@ -829,22 +672,22 @@ const toggleTools = async (key: string) => {
 };
 
 const shareScreen = () => {
-  tools.isScreenSharing = !tools.isScreenSharing;
-  nextTick(() => {
-    if (tools.isScreenSharing) {
-      const videoTrack = localStreamRef.value
-        ?.getTracks()
-        .find((track) => track.kind === "video");
+  if (!tools.isScreenSharing) {
+    const videoTrack = localStreamRef.value
+      ?.getTracks()
+      .find((track) => track.kind === "video");
 
-      if (Object.keys(peers).length) {
-        if (videoTrack !== undefined) {
-          navigator.mediaDevices
-            .getDisplayMedia({
-              audio: !tools.isMuted,
-              video: true,
-              cursor: true,
-            } as Record<string, any>)
-            .then(async (stream) => {
+    if (Object.keys(peers).length) {
+      if (videoTrack !== undefined) {
+        navigator.mediaDevices
+          .getDisplayMedia({
+            audio: !tools.isMuted,
+            video: true,
+            cursor: true,
+          } as Record<string, any>)
+          .then(async (stream) => {
+            tools.isScreenSharing = true;
+            nextTick(() => {
               const screenTrack = stream
                 .getTracks()
                 .find((tr) => tr.kind === "video");
@@ -875,33 +718,39 @@ const shareScreen = () => {
                 });
               }
             });
-        } else {
-          if (Object.keys(peers).length) {
-            Object.keys(peers).map((socket_id) => {
-              createOffer(
-                socket_id,
-                peers[socket_id].user_identifier,
-                true,
-                "screen_sharing"
-              );
-            });
-          }
+          })
+          .catch((error) => {
+            if (error.name === "NotAllowedError") {
+              tools.isScreenSharing = false;
+            }
+          });
+      } else {
+        if (Object.keys(peers).length) {
+          Object.keys(peers).map((socket_id) => {
+            createOffer(
+              socket_id,
+              peers[socket_id].user_identifier,
+              true,
+              "screen_sharing"
+            );
+          });
         }
       }
-    } else {
-      localStreamRef.value?.getTracks().forEach((tr) => tr?.stop());
-      localStreamRef.value = backupLocalStreamRef.value;
-      useBackupLocalStream();
     }
-  });
+  } else {
+    tools.isScreenSharing = false;
+    localStreamRef.value?.getTracks().forEach((tr) => tr?.stop());
+    localStreamRef.value = backupLocalStreamRef.value;
+    useBackupLocalStream();
+    socket.value.emit("update_video_canvas", {
+      isScreenSharing: false,
+      meeting_id: decodedSession.value!.meeting_id,
+    });
+  }
 };
 
 const back = () => {
   window.location.href = "/";
-};
-
-var onresize = function () {
-  screen_width.value = document.body.clientWidth;
 };
 
 const leaveMeeting = () => {
@@ -909,7 +758,10 @@ const leaveMeeting = () => {
   window.location.href = "/";
 };
 
-window.addEventListener("resize", onresize);
+window.addEventListener("resize", () => {
+  screen_width.value = document.body.clientWidth;
+  screen_height.value = document.body.clientHeight;
+});
 
 const copyClipboard = async () => {
   let text = document.getElementById("meeting_id")?.innerHTML;
@@ -948,34 +800,6 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.section-1 {
-  min-width: 80px;
-  width: 6%;
-
-  @media screen and (max-width: 896px) {
-    width: 10%;
-  }
-}
-
-.section-2 {
-  min-width: 400px;
-  width: 52%;
-
-  @media screen and (max-width: 896px) {
-    min-width: 100px;
-    width: 96%;
-  }
-}
-
-.section-3 {
-  width: 42%;
-}
-
-#video-container {
-  height: calc(100vh - 305px);
-  overflow-y: auto;
-}
-
 /* width */
 ::-webkit-scrollbar {
   width: 7px;
@@ -996,5 +820,13 @@ onMounted(() => {
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+#main-container {
+  height: calc(100% - 4.5rem);
+
+  @media screen and (max-width: 640px) {
+    height: calc(100% - 4rem);
+  }
 }
 </style>

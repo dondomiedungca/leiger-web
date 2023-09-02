@@ -1,79 +1,161 @@
 <template lang="">
   <div
-    :class="`${
-      overrideClass
-        ? classes
-        : 'video-player-box mb-1 border-2 border-blue-400 rounded-md h-44 min-w-max relative ' +
-          classes
+    @click="onClick"
+    :class="`video-container${
+      isForSharing
+        ? '-for-sharing'
+        : isMini
+        ? isSomeoneSharing
+          ? '-mini'
+          : '-solo'
+        : ''
+    } relative rounded-lg bg-gray-900 aspect-video flex-shrink flex-grow basis-full ${
+      isForSharing ? 'share-border' : isActive ? 'ring-2 ring-green-400' : ''
     }`"
   >
-    <div
-      class="absolute z-10 bottom-0 left-0 w-full flex flex-row gap-8 items-center"
-    >
-      <div class="relative">
-        <fa
-          v-if="showIcons"
-          :class="`text-white absolute bottom-2 left-2 ${
-            !isOpenMic ? 'bg-red-500' : 'bg-blue-500'
-          } p-1 rounded-md`"
-          :icon="`fa-solid ${
-            !isOpenMic ? 'fa-microphone-slash' : 'fa-microphone'
-          }`"
-        />
-      </div>
-      <div class="relative">
-        <fa
-          v-if="showIcons"
-          :class="`ml-2 text-white absolute bottom-2 ${
-            !isOpenCam ? 'bg-red-500' : 'bg-blue-500'
-          } p-1 rounded-md`"
-          :icon="`fa-solid ${!isOpenCam ? 'fa-video-slash' : 'fa-video'}`"
-        />
-      </div>
-    </div>
-    <div
-      v-if="!isOpenCam && user_identifier"
-      class="absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-    >
-      <p
-        :class="`text-white font-semibold font-oxygen px-3 py-2 rounded-lg ${
-          user_identifier === 'YOU' ? 'bg-blue-400' : 'bg-gray-700'
-        }`"
-      >
-        {{ user_identifier }}
-      </p>
-    </div>
     <video
-      class="video-player aspect-video bg-black"
-      :srcObject="props.srcObject"
-      :id="props.id"
+      :srcObject="srcObject"
       autoplay
       playsinline
+      :class="`absolute top-0 left-0 ${unFlip ? '' : 'unFlip'} aspect-video`"
     ></video>
+    <div
+      v-if="!isOpenCam"
+      :class="`absolute top-0 left-0 w-full h-full rounded-lg z-10 ${
+        user_identifier?.includes('YOU') ? 'bg-gray-700' : 'bg-gray-900'
+      }`"
+    ></div>
+    <img
+      v-if="!isOpenCam"
+      :src="UserNotShowImage"
+      alt=""
+      class="w-14 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
+    />
+    <div
+      v-if="!hideIcon"
+      :class="`absolute ${
+        isForSharing ? '-bottom-8' : 'bottom-1'
+      } left-1 flex flex-row items-center gap-1 z-30`"
+    >
+      <div
+        :class="`p-1 rounded-sm ${
+          isForSharing ? 'bg-gray-700' : 'bg-gray-800'
+        }`"
+      >
+        <img
+          :src="isOpenMic ? MicrophoneImage : MicrophoneDisableImage"
+          alt=""
+          class="w-4"
+        />
+      </div>
+      <div
+        :class="`p-1 rounded-sm ${
+          isForSharing ? 'bg-gray-700' : 'bg-gray-800'
+        }`"
+      >
+        <img
+          :src="isOpenCam ? VideoImage : VideoDisableImage"
+          alt=""
+          class="w-4"
+        />
+      </div>
+      <p
+        :class="`${
+          isForSharing
+            ? 'bg-none ring-1 ring-blue-500 text-gray-200'
+            : user_identifier?.includes('YOU')
+            ? 'bg-gray-400 text-gray-800'
+            : 'bg-gray-800 text-gray-300'
+        } font-semibold font-oxygen text-xs py-1 px-2 relative right-0 ml-5`"
+      >
+        {{ user_identifier || "..." }}
+      </p>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import MicrophoneImage from "@/assets/images/microphone.png";
+import MicrophoneDisableImage from "@/assets/images/microphone-disable.png";
+import VideoImage from "@/assets/images/video.png";
+import VideoDisableImage from "@/assets/images/video-disable.png";
+import UserNotShowImage from "@/assets/images/user-not-show.png";
+
+const emit = defineEmits(["onPressDiv"]);
+
 const props = defineProps<{
-  srcObject: MediaStream;
+  unFlip?: boolean;
+  isActive?: boolean;
   id?: string;
-  overrideClass?: boolean;
-  classes?: string;
-  showIcons?: boolean;
+  isSomeoneSharing?: boolean;
+  isForSharing?: boolean;
+  isMini?: boolean;
+  srcObject: MediaStream;
   isOpenCam?: boolean;
   isOpenMic?: boolean;
   user_identifier?: string;
+  hideIcon?: boolean;
 }>();
+
+const onClick = () => {
+  emit("onPressDiv", props?.id);
+};
 </script>
 
 <style scoped lang="scss">
-.video-player {
-  width: 100%;
-  height: 100%;
+.video-container {
+  max-height: 400px;
+  min-height: 150px;
+  max-width: 400px;
+
+  video {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.video-container-mini {
+  max-height: 200px;
+  min-height: 120px;
+  max-width: 200px;
+
+  video {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.video-container-solo {
+  max-height: 300px;
+  min-height: 140px;
+  max-width: 300px;
+
+  video {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.video-container-for-sharing {
+  max-height: 100%;
+  border-radius: 0;
+  video {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 video {
   -webkit-transform: scaleX(-1);
   transform: scaleX(-1);
+}
+
+video.unFlip {
+  -webkit-transform: scaleX(1);
+  transform: scaleX(1);
+}
+
+.share-border {
+  border: 2px solid rgb(174, 174, 174);
 }
 </style>
