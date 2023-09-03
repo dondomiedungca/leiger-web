@@ -18,6 +18,7 @@
       autoplay
       playsinline
       :class="`absolute top-0 left-0 ${unFlip ? '' : 'unFlip'} aspect-video`"
+      :muted="muted"
     ></video>
     <div
       v-if="!isOpenCam"
@@ -35,7 +36,9 @@
       v-if="!hideIcon"
       :class="`absolute ${
         isForSharing ? '-bottom-8' : 'bottom-1'
-      } left-1 flex flex-row items-center gap-1 z-30`"
+      } left-1 flex flex-row items-center gap-1 ${
+        isForSharing ? 'z-50' : 'z-30'
+      }`"
     >
       <div
         :class="`p-1 rounded-sm ${
@@ -62,11 +65,13 @@
       <p
         :class="`${
           isForSharing
-            ? 'bg-none ring-1 ring-blue-500 text-gray-200'
+            ? 'bg-gray-700 ring-1 ring-blue-500 text-gray-200'
             : user_identifier?.includes('YOU')
             ? 'bg-gray-400 text-gray-800'
             : 'bg-gray-800 text-gray-300'
-        } font-semibold font-oxygen text-xs py-1 px-2 relative right-0 ml-5`"
+        } font-semibold font-oxygen text-xs py-1 px-2 relative right-0 ${
+          isForSharing ? 'ml-3' : 'ml-5'
+        }`"
       >
         {{ user_identifier || "..." }}
       </p>
@@ -95,6 +100,7 @@ const props = defineProps<{
   isOpenMic?: boolean;
   user_identifier?: string;
   hideIcon?: boolean;
+  muted?: boolean;
 }>();
 
 const onClick = () => {

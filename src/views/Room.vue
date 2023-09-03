@@ -85,8 +85,7 @@
       </div>
     </div>
   </div>
-  <img :src="Logo" alt="" class="block sm:hidden fixed top-3 left-5 w-24" />
-  <main class="bg-gray-950 h-screen w-screen">
+  <main class="bg-gray-950 h-screen w-screen relative">
     <section
       id="main-container"
       :class="`bg-gray-200 w-full flex ${containerFlexResult} relative`"
@@ -96,7 +95,7 @@
         v-if="someonesharing.length"
         :class="`bg-gray-800 flex flex-row items-center justify-center w-full h-${
           containerFlexResult === 'flex-row' ? 'full' : '1/2'
-        } p-5`"
+        } p-5 pt-14`"
       >
         <VideoComponent
           :isForSharing="true"
@@ -116,7 +115,7 @@
           someonesharing.length || Object.keys(peers).length
             ? 'start'
             : 'center'
-        } items-center justify-center flex-wrap gap-2 overflow-auto p-5`"
+        } items-center justify-center flex-wrap gap-2 overflow-auto p-5 pt-12`"
       >
         <VideoComponent
           id="current"
@@ -127,6 +126,7 @@
           :isOpenCam="tools.isOpenCam"
           :isOpenMic="!tools.isMuted"
           :user_identifier="`YOU - ${decodedSession?.user_identifier}`"
+          :muted="true"
         />
         <template v-for="(peer, sid) in peers">
           <VideoComponent
@@ -142,7 +142,7 @@
         </template>
       </div>
       <div
-        class="absolute top-2 left-2 bg-gray-700 rounded-md py-1 px-2 flex flex-row gap-4 items-center justify-center"
+        class="absolute top-2 left-2 bg-gray-700 rounded-md py-1 px-2 flex flex-row gap-4 items-center justify-center z-30 border-2 border-gray-500"
       >
         <p class="text-gray-200 text-sm font-oxygen">
           <span class="text-gray-500">MEETING ID:</span>
@@ -167,12 +167,12 @@
     >
       <img
         :src="Logo"
-        class="hidden sm:block w-24 lg:w-20 absolute left-2"
+        class="sm:block w-10 sm:w-24 lg:w-20 absolute left-2"
         alt=""
       />
       <button
         @click="() => toggleTools('isOpenCam')"
-        class="bg-gray-800 p-2 rounded-md"
+        class="bg-gray-800 p-2 rounded-md ml-10 sm:ml-0"
       >
         <img
           :src="
@@ -203,9 +203,15 @@
           class="w-5 sm:w-6"
         />
       </button>
-      <button @click="() => {}" class="bg-gray-800 p-2 rounded-md">
-        <img :src="MoreImage" alt="" class="w-5 sm:w-6" />
-      </button>
+      <div class="rounded-md flex flex-row gap-1 ml-2">
+        <small class="text-white font-oxygen font-normal">{{
+          Object.keys(peers).length + 1
+        }}</small>
+        <fa
+          class="text-slate-400 duration-300 group-hover:text-blue-400"
+          icon="fa-solid fa-users"
+        />
+      </div>
       <button
         data-modal-target="leave-meeting"
         data-modal-toggle="leave-meeting"
@@ -573,7 +579,7 @@ const createNewLocalStreamRef = async (media_type = "default") => {
               : false,
           })
         : await navigator.mediaDevices.getDisplayMedia({
-            audio: !tools.isMuted,
+            audio: true,
             video: true,
             cursor: true,
           } as Record<string, any>);
@@ -595,15 +601,28 @@ const createNewLocalStreamRef = async (media_type = "default") => {
         ) {
           backupLocalStreamRef.value =
             await navigator.mediaDevices.getUserMedia({
-              audio: !tools.isMuted,
+              audio: true,
               video: {
                 facingMode: "user",
               },
             });
           backupLocalStreamRef.value.getVideoTracks()[0].enabled = false;
+          backupLocalStreamRef.value.getAudioTracks()[0].enabled =
+            !tools.isMuted;
         }
 
         if (!!screenTrack) {
+          const audioTrack = backupLocalStreamRef.value
+            ?.getTracks()
+            .find((tr) => tr.kind === "audio");
+
+          Object.keys(peers).map((socket_id) => {
+            peers[socket_id].peerConnection.getSenders().forEach((sender) => {
+              if (sender.track?.kind === "audio" && audioTrack) {
+                sender.replaceTrack(audioTrack);
+              }
+            });
+          });
           screenTrack.onended = async function () {
             tools.isScreenSharing = false;
             localStreamRef.value = backupLocalStreamRef.value;
@@ -673,9 +692,14 @@ const toggleTools = async (key: string) => {
       );
     }
     if (key == "isMuted") {
-      const audioTrack = localStreamRef.value
+      const audioTrack = (
+        tools.isScreenSharing
+          ? backupLocalStreamRef.value
+          : localStreamRef.value
+      )
         ?.getTracks()
         .find((track) => track.kind === "audio");
+
       if (audioTrack !== undefined) {
         audioTrack!.enabled = !tools.isMuted;
         socket.value.emit("notify_users_on_toggle", {
@@ -709,8 +733,14 @@ const shareScreen = () => {
               const screenTrack = stream
                 .getTracks()
                 .find((tr) => tr.kind === "video");
+
               backupLocalStreamRef.value = localStreamRef.value;
               localStreamRef.value = stream;
+
+              const audioTrack = backupLocalStreamRef.value
+                ?.getTracks()
+                .find((tr) => tr.kind === "audio");
+
               if (screenTrack) {
                 Object.keys(peers).map((socket_id) => {
                   peers[socket_id].peerConnection
@@ -718,6 +748,10 @@ const shareScreen = () => {
                     .forEach((sender) => {
                       if (sender.track?.kind === "video") {
                         sender.replaceTrack(screenTrack);
+                      } else {
+                        if (audioTrack) {
+                          sender.replaceTrack(audioTrack);
+                        }
                       }
                     });
                 });
@@ -841,10 +875,10 @@ onMounted(() => {
 }
 
 #main-container {
-  height: calc(100% - 4.5rem);
+  height: calc(100% - 4.5rem) !important;
 
   @media screen and (max-width: 640px) {
-    height: calc(100% - 4rem);
+    height: calc(100% - 4rem) !important;
   }
 }
 </style>
