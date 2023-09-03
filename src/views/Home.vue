@@ -3,11 +3,15 @@
   <section class="flex flex-row px-5 sm:px-8 md:px-11 lg:px-14 gap-3 mt-10">
     <div class="left-side sm:w-1/2 w-full">
       <p class="md:text-4xl text-2xl text-gray-500 intro leading-tight">
-        Leiger offer a both
-        <span class="text-blue-500 font-bold">FREE</span>
-        and paid version for video conference application that suits for your
-        needs.
+        Leiger is only for
+        <span class="text-blue-500 font-bold">PORTFOLIO purposes</span> and this
+        web application will never collect any money or any fee. You are free to
+        use or test this web application. Thanks.
       </p>
+      <br />
+      <small class="text-gray-700 text-sx italic mt-5"
+        >Developed by <span class="font-semibold">Dondomie Dungca</span></small
+      >
       <div class="quick-connect mt-16 text-lg flex flex-col gap-3">
         <p class="text-gray-700">Get into Meeting now</p>
         <div
@@ -183,9 +187,9 @@
     >
       <img :src="LogoImage" alt="" class="w-32" />
       <div class="flex flex-col mt-2 sm:mt-10 gap-1">
-        <a href="" class="text-xs font-semibold"> ROADMAP </a>
-        <a href="" class="text-xs font-semibold"> ABOUT US </a>
-        <a href="" class="text-xs font-semibold"> DEVELOPERS </a>
+        <a href="#" class="text-xs font-semibold"> ROADMAP </a>
+        <a href="#" class="text-xs font-semibold"> ABOUT US </a>
+        <a href="#" class="text-xs font-semibold"> DEVELOPER </a>
       </div>
     </div>
   </section>

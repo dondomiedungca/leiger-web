@@ -89,7 +89,7 @@
   <main class="bg-gray-950 h-screen w-screen">
     <section
       id="main-container"
-      :class="`bg-gray-200 w-full flex ${containerFlexResult}`"
+      :class="`bg-gray-200 w-full flex ${containerFlexResult} relative`"
     >
       <!-- Sharing screen section -->
       <div
@@ -141,6 +141,25 @@
           />
         </template>
       </div>
+      <div
+        class="absolute top-2 left-2 bg-gray-700 rounded-md py-1 px-2 flex flex-row gap-4 items-center justify-center"
+      >
+        <p class="text-gray-200 text-sm font-oxygen">
+          <span class="text-gray-500">MEETING ID:</span>
+          <span id="meeting_id">{{ decodedSession?.meeting_id }}</span>
+        </p>
+        <button class="group" @click="copyClipboard">
+          <fa
+            class="text-white duration-300 group-hover:text-blue-400"
+            icon="fa-solid fa-copy"
+          />
+        </button>
+      </div>
+      <img
+        v-if="auth.is_authenticated"
+        class="absolute top-2 right-2 w-8 rounded"
+        :src="auth.user?.user_meta.profile_photo"
+      />
     </section>
     <section
       id="tools"
@@ -370,7 +389,6 @@ const roomAndConnectionInitializer = async () => {
     socket.value.on(
       "update_video_canvas",
       (_socket_data: Record<string, any>) => {
-        console.log(_socket_data);
         const previous = [...someonesharing.value];
         const index = previous.findIndex(
           (ss) => ss === _socket_data?.socket_id

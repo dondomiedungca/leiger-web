@@ -139,6 +139,7 @@ const onClick = () => {
 .video-container-for-sharing {
   max-height: 100%;
   border-radius: 0;
+
   video {
     width: 100%;
     height: 100%;
