@@ -13,6 +13,9 @@ export default {
       maxHeight: {
         "1/2": "50%",
       },
+      fontSize: {
+        "2xs": "10px",
+      },
     },
     screens: {
       xs: "450px",

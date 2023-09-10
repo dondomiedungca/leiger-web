@@ -88,15 +88,12 @@
   <main class="bg-gray-950 h-screen w-screen relative">
     <section
       id="main-container"
-      :class="`bg-gray-200 w-full flex ${containerFlexResult} relative`"
+      :class="`bg-gray-200 w-full flex flex-col sm:flex-row relative`"
     >
       <!-- Sharing screen section -->
       <div
-        id="sharing-container"
         v-if="someonesharing.length"
-        :class="`bg-gray-800 flex flex-row items-center justify-center w-full h-${
-          containerFlexResult === 'flex-row' ? 'full' : '1/2'
-        } p-5 pt-14`"
+        :class="`bg-gray-800 flex flex-row items-center justify-center w-full h-1/2 sm:h-full p-5 pt-14`"
       >
         <VideoComponent
           :isForSharing="true"
@@ -110,9 +107,9 @@
       </div>
       <!-- Initial screen including you -->
       <div
-        :class="`bg-gray-800 w-full h-${
-          containerFlexResult === 'flex-row' ? 'full' : '1/2'
-        } flex flex-row content-${
+        :class="`bg-gray-800 w-full ${
+          someonesharing.length ? 'h-1/2' : 'h-full'
+        } sm:h-full flex flex-row content-${
           someonesharing.length || Object.keys(peers).length
             ? 'start'
             : 'center'
@@ -236,7 +233,15 @@ import DisplayImage from "@/assets/images/display.png";
 import DisplayDisableImage from "@/assets/images/display-disable.png";
 import MoreImage from "@/assets/images/more.png";
 import LeaveImage from "@/assets/images/leave.png";
-import { nextTick, onMounted, reactive, ref, toRaw, computed } from "vue";
+import {
+  nextTick,
+  onMounted,
+  reactive,
+  ref,
+  toRaw,
+  computed,
+  watch,
+} from "vue";
 import { storeToRefs } from "pinia";
 import { useCookies } from "../libs/useCookies";
 import { useValidateSession } from "../libs/useMeeting";
@@ -294,21 +299,15 @@ const SERVERS = {
   ],
 };
 
-const containerFlexResult = computed(() => {
+const validateSize = () => {
   isMini.value = false;
   if (someonesharing.value.length) {
     if (screen_height.value <= 650) {
       isMini.value = true;
-      if (screen_width.value <= screen_height.value) {
-        return "flex-col";
-      } else {
-        return "flex-row";
-      }
     } else {
       if (screen_width.value <= 768) {
         isMini.value = true;
       }
-      return "flex-col";
     }
   } else {
     if (
@@ -317,8 +316,14 @@ const containerFlexResult = computed(() => {
     ) {
       isMini.value = true;
     }
-    return "flex-row";
   }
+};
+
+watch([someonesharing, screen_height, screen_width], validateSize);
+
+window.addEventListener("resize", () => {
+  screen_width.value = document.body.clientWidth;
+  screen_height.value = document.body.clientHeight;
 });
 
 const validateSession = async () => {
@@ -802,19 +807,10 @@ const shareScreen = () => {
   }
 };
 
-const back = () => {
-  window.location.href = "/";
-};
-
 const leaveMeeting = () => {
   deleteCookie("MEETING_SESSION");
   window.location.href = "/";
 };
-
-window.addEventListener("resize", () => {
-  screen_width.value = document.body.clientWidth;
-  screen_height.value = document.body.clientHeight;
-});
 
 const copyClipboard = async () => {
   let text = document.getElementById("meeting_id")?.innerHTML;
@@ -849,6 +845,7 @@ useFetchEffect(handleValidateSession, {
 onMounted(() => {
   initFlowbite();
   validateSession();
+  validateSize()
 });
 </script>
 

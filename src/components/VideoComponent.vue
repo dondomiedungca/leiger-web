@@ -62,14 +62,20 @@
           class="w-4"
         />
       </div>
+    </div>
+    <div
+      :class="`absolute ${
+        isForSharing ? '-bottom-8' : 'bottom-1'
+      } right-1 flex flex-row items-center ${isForSharing ? 'z-50' : 'z-30'}`"
+    >
       <p
         :class="`${
           isForSharing
             ? 'bg-gray-700 ring-1 ring-blue-500 text-gray-200'
             : user_identifier?.includes('YOU')
-            ? 'bg-gray-400 text-gray-800'
-            : 'bg-gray-800 text-gray-300'
-        } font-semibold font-oxygen text-xs py-1 px-2 relative right-0 ${
+            ? 'bg-gray-400 text-gray-800 text-2xs'
+            : 'bg-gray-800 text-gray-300 text-xs'
+        } font-semibold font-oxygen py-1 px-2 relative right-0 ${
           isForSharing ? 'ml-3' : 'ml-5'
         }`"
       >
