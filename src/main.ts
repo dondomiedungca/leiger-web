@@ -49,10 +49,7 @@ library.add(
 
 app.use(router);
 app.use(vue3GoogleLogin, {
-  clientId:
-    process.env.NODE_ENV === "production"
-      ? process.env.VITE_CLIENT_ID
-      : import.meta.env.VITE_CLIENT_ID,
+  clientId: import.meta.env.VITE_CLIENT_ID,
 });
 app.component("fa", FontAwesomeIcon);
 
