@@ -139,9 +139,6 @@ const { fetch, ...handleGoogleLogin } = useSigninWithGoogle();
 const router = useRouter();
 
 const login = () => {
-  console.log(process.env.NODE_ENV);
-  console.log(process.env);
-  console.log(import.meta.env);
   googleTokenLogin().then((response) => {
     if (response?.access_token) {
       fetch(response.access_token);
