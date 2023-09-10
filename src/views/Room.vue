@@ -95,7 +95,7 @@
         v-if="someonesharing.length"
         :class="`bg-gray-800 flex flex-row items-center justify-center w-full h-${
           containerFlexResult === 'flex-row' ? 'full' : '1/2'
-        } p-5 pt-14`"
+        } p-5 pt-14 max-h-80`"
       >
         <VideoComponent
           :isForSharing="true"
