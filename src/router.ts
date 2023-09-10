@@ -10,7 +10,7 @@ export const app = createApp(App);
 app.use(pinia);
 
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory("https://main--capable-moxie-0abfb6.netlify.app/"),
   routes: [
     {
       name: "home",
