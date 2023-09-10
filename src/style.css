@@ -11,3 +11,7 @@
 .font-oxygen {
   font-family: "Oxygen", sans-serif;
 }
+
+#sharing-container {
+  height: 100%;
+}
