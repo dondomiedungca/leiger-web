@@ -6,7 +6,14 @@ export default {
     "./node_modules/flowbite/**/*.js",
   ],
   theme: {
-    extend: {},
+    extend: {
+      minHeight: {
+        "1/2": "50%",
+      },
+      maxHeight: {
+        "1/2": "50%",
+      },
+    },
     screens: {
       xs: "450px",
 

@@ -88,14 +88,14 @@
   <main class="bg-gray-950 h-screen w-screen relative">
     <section
       id="main-container"
-      :class="`bg-gray-200 w-full h-full flex ${containerFlexResult} relative`"
+      :class="`bg-gray-200 w-full flex ${containerFlexResult} relative`"
     >
       <!-- Sharing screen section -->
       <div
         v-if="someonesharing.length"
         :class="`bg-gray-800 flex flex-row items-center justify-center w-full h-${
           containerFlexResult === 'flex-row' ? 'full' : '1/2'
-        } p-5 pt-14`"
+        } p-5 pt-14 max-h-1/2`"
       >
         <VideoComponent
           :isForSharing="true"
@@ -115,7 +115,7 @@
           someonesharing.length || Object.keys(peers).length
             ? 'start'
             : 'center'
-        } items-center justify-center flex-wrap gap-2 overflow-auto p-5 pt-12`"
+        } items-center justify-center flex-wrap gap-2 overflow-auto p-5 pt-12 min-h-1/2`"
       >
         <VideoComponent
           id="current"
