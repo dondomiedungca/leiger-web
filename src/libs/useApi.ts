@@ -2,7 +2,10 @@ import axios, { AxiosResponse } from "axios";
 import { ref, onUnmounted, Ref } from "vue";
 import { useCookies } from "./useCookies";
 
-const BASE_URL = import.meta.env.VITE_BACKEND_API;
+const BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? process.env.VITE_BACKEND_API
+    : import.meta.env.VITE_BACKEND_API;
 
 export enum HTTPMethod {
   POST = "post",
