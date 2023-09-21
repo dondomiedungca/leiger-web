@@ -63,7 +63,10 @@
             Just wait at least <b>1 minute</b> after clicking some button that
             is related to backend endpoints since the backend is only deployed
             in the free tier. Or try to hit this
-            <a href="https://leiger-api.onrender.com/" class="underline"
+            <a
+              target="_blank"
+              href="https://leiger-api.onrender.com/"
+              class="underline"
               ><b>endpoint</b></a
             >
             until the "Hello World!" show
