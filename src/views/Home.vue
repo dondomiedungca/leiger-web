@@ -60,7 +60,9 @@
           <p class="text-sm">
             Just wait at least <b>1 minute</b> after clicking some button that
             is related to backend endpoints since the backend is only deployed
-            in the free tier.
+            in the free tier. Or try to hit this
+            <a href="https://leiger-api.onrender.com/">endpoint</a> until the
+            "Hello World!" show
           </p>
         </div>
         <TextInput
