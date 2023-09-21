@@ -52,6 +52,17 @@
             </div>
           </div>
         </div>
+        <div
+          class="lg:w-1/2 w-full bg-blue-100 border-t border-b border-blue-500 text-blue-700 px-4 py-3"
+          role="alert"
+        >
+          <p class="font-bold">Informational Message - Inactivity Delay</p>
+          <p class="text-sm">
+            Just wait at least <b>1 minute</b> after clicking some button that
+            is related to backend endpoints since the backend is only deployed
+            in the free tier.
+          </p>
+        </div>
         <TextInput
           class="lg:w-1/2 w-full"
           v-model="meetingId"
@@ -65,6 +76,7 @@
           type="password"
           @onPressEnter="joinMeeting"
         />
+
         <button
           @click="joinMeeting"
           class="px-4 py-2 lg:w-1/2 w-full text-xs text-gray-600 drop-shadow-md duration-500 transform active:scale-75 transition-transform bg-blue-100 rounded-lg flex flex-row items-center text-center justify-center"
