@@ -65,7 +65,7 @@
             in the free tier. Or try to hit this
             <a
               target="_blank"
-              href="https://leiger-api-sauo.onrender.com"
+              href="https://leiger-api.onrender.com/"
               class="underline"
               ><b>endpoint</b></a
             >
