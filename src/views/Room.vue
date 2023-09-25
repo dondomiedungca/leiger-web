@@ -369,7 +369,8 @@ const roomAndConnectionInitializer = async () => {
         user_identifier: decodedSession.value!.user_identifier,
       },
       forceNew: true,
-      transports: ["polling", "websocket", "webtransport"],
+      transports: ["websocket"],
+      secure: true,
     });
 
     socket.value.on("join", (_socket_data: Record<string, any>) => {
