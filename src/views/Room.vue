@@ -369,7 +369,6 @@ const roomAndConnectionInitializer = async () => {
         user_identifier: decodedSession.value!.user_identifier,
       },
       forceNew: true,
-      transports: ["websocket"],
       secure: true,
     });
 
