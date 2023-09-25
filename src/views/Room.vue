@@ -369,6 +369,7 @@ const roomAndConnectionInitializer = async () => {
         user_identifier: decodedSession.value!.user_identifier,
       },
       forceNew: true,
+      transports: ["websocket"],
     });
 
     socket.value.on("join", (_socket_data: Record<string, any>) => {
@@ -845,7 +846,7 @@ useFetchEffect(handleValidateSession, {
 onMounted(() => {
   initFlowbite();
   validateSession();
-  validateSize()
+  validateSize();
 });
 </script>
 
