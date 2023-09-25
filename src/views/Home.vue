@@ -52,26 +52,6 @@
             </div>
           </div>
         </div>
-        <div
-          class="lg:w-1/2 w-full bg-blue-100 border-t border-b border-blue-500 text-slate-700 px-4 py-3"
-          role="alert"
-        >
-          <p class="font-bold text-blue-700">
-            Informational Message - Inactivity Delay
-          </p>
-          <p class="text-sm">
-            Just wait at least <b>1 minute</b> after clicking some button that
-            is related to backend endpoints since the backend is only deployed
-            in the free tier. Or try to hit this
-            <a
-              target="_blank"
-              href="https://leiger-api.onrender.com/"
-              class="underline"
-              ><b>endpoint</b></a
-            >
-            until the "Hello World!" show
-          </p>
-        </div>
         <TextInput
           class="lg:w-1/2 w-full"
           v-model="meetingId"
