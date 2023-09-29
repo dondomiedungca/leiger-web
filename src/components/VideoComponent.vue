@@ -17,7 +17,7 @@
       :srcObject="srcObject"
       autoplay
       playsinline
-      :class="`absolute top-0 left-0 ${unFlip ? '' : 'unFlip'} aspect-video`"
+      :class="`absolute top-0 left-0 ${!unFlip ? '' : 'unFlip'} aspect-video`"
       :muted="muted"
     ></video>
     <div

@@ -102,6 +102,7 @@
             peers[someonesharing[0]].user_identifier
           } is sharing screen`"
           :isOpenCam="true"
+          :unFlip="true"
           :isOpenMic="open_mics.includes(someonesharing[0])"
         />
       </div>
